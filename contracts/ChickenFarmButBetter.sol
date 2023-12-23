@@ -16,6 +16,13 @@ interface IUniswapV2Pair {
     function getReserves() external view returns (uint112, uint112, uint32);
 }
 
+interface IJoeFactory {
+    function getPair(
+        address tokenA,
+        address tokenB
+    ) external view returns (address pair);
+}
+
 contract ChickenFarmButBetter is Ownable {
     //Emit payment events
 
@@ -27,6 +34,8 @@ contract ChickenFarmButBetter is Ownable {
         uint256 amount
     );
     event BoughtChickens(address sender, uint256 amount);
+    event RewardsClaimed(address sender, uint256 amount);
+    event ChickensBonded(address sender, uint256 amount);
 
     //SafeMathuse
 
@@ -36,8 +45,10 @@ contract ChickenFarmButBetter is Ownable {
     IBETTERCHICKENS private chickenContract;
     IBETTEREGG private eggs;
     IERC20 private usdc;
-    IUniswapV2Pair private unipair;
-    address private pair;
+    IUniswapV2Pair private eggWavaxPair;
+    IUniswapV2Pair private usdcWavaxPair;
+    IJoeFactory private factory;
+
     address public treasury;
     address private burn;
 
@@ -83,13 +94,22 @@ contract ChickenFarmButBetter is Ownable {
         address _treasury, //Address of a treasury wallet to hold fees and taxes
         uint256 _dailyInterest, //DailyInterest
         uint256 _nodeCost, //Cost of a node in $EGGS
-        uint256 _bondDiscount //% of discount of the bonding
+        uint256 _bondDiscount, //% of discount of the bonding
+        address _factory // Joe factory contract address
     ) {
         eggs = IBETTEREGG(_eggs);
-        unipair = IUniswapV2Pair(_pair);
+
+        console.log("Pair in constructor", _pair);
+        eggWavaxPair = IUniswapV2Pair(_pair);
         usdc = IERC20(_usdc);
         chickenContract = IBETTERCHICKENS(_chickenContract);
-        pair = _pair;
+        factory = IJoeFactory(_factory);
+        usdcWavaxPair = IUniswapV2Pair(
+            factory.getPair(
+                0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7,
+                0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E
+            )
+        );
         treasury = _treasury;
         dailyInterest = _dailyInterest;
         nodeCost = _nodeCost.mul(1e18);
@@ -100,12 +120,20 @@ contract ChickenFarmButBetter is Ownable {
     //Price Checking Functions
 
     function getPrice() public view returns (uint256) {
-        (uint112 reserve0, uint112 reserve1, ) = unipair.getReserves();
+        (uint256 reserveUsdc0, uint256 reserveUsdc1, ) = usdcWavaxPair
+            .getReserves();
+
+        uint256 avaxPrice = reserveUsdc0.div(reserveUsdc1);
+
+        console.log("calculated avax price", avaxPrice);
+
+        (uint256 reserve0, uint256 reserve1, ) = eggWavaxPair.getReserves();
+
+        console.log("Reserve0", reserve0, "Reserve1", reserve1);
 
         require(reserve0 > 0 && reserve1 > 0, "Reserves not available");
 
-        uint256 price = (uint256(reserve1) * ethPrice * 1e18) /
-            uint256(reserve0);
+        uint256 price = (uint256(reserve1) * avaxPrice) / uint256(reserve0);
 
         return price;
     }
@@ -114,6 +142,8 @@ contract ChickenFarmButBetter is Ownable {
 
     function getBondCost() public view returns (uint256) {
         uint256 tokenPrice = getPrice();
+
+        console.log("Token price from get price function", tokenPrice);
         uint256 basePrice = nodeCost.mul(tokenPrice).div(1e18);
         uint256 discount = SafeMath.sub(100, bondDiscount);
         uint256 bondPrice = basePrice.mul(discount).div(100);
@@ -161,7 +191,7 @@ contract ChickenFarmButBetter is Ownable {
         uint256 i;
         for (i = 0; i < farmersAddresses.length; i++) {
             address _address = farmersAddresses[i];
-            updateClaims(_address);
+            updateClaims(_address, 0);
         }
     }
 
@@ -181,58 +211,63 @@ contract ChickenFarmButBetter is Ownable {
         uint256 nodesOwned = chickenContract.balanceOf(msg.sender);
         uint256 betterEggOwned = eggs.balanceOf(msg.sender);
 
-        console.log("beter egg owned:", betterEggOwned);
         uint256 transactionTotal = nodeCost.mul(_amount);
         require(nodesOwned < 100, "Max Chickens Owned");
 
-        console.log("transaction total:", transactionTotal);
         require(betterEggOwned >= transactionTotal, "Not enough $EGGS");
         chickenContract.buyChickens(msg.sender, _amount);
-        betterEggOwned = chickenContract.balanceOf(msg.sender);
+
         Farmer memory farmer;
         if (farmers[msg.sender].exists) {
             farmer = farmers[msg.sender];
-            farmer.nftBalance = betterEggOwned;
         } else {
-            farmer = Farmer(true, betterEggOwned, 0, 0, 0, 0);
+            farmer = Farmer(true, 0, 0, 0, 0, 0);
             farmersAddresses.push(msg.sender);
         }
 
         eggs.transferFrom(msg.sender, address(this), transactionTotal);
         eggs.burn(address(this), transactionTotal);
         farmers[msg.sender] = farmer;
-        updateClaims(msg.sender);
+        updateClaims(msg.sender, _amount);
 
         totalNodes += _amount;
 
         emit BoughtChickens(msg.sender, _amount);
     }
 
-    // function bondNode(uint256 _amount) external payable {
-    //     require(isLive, "Platform is offline");
-    //     require(
-    //         block.timestamp >= bondNodeStartTime,
-    //         "BondNode not available yet"
-    //     );
-    //     uint256 nodesOwned = farmers[msg.sender].eggsNodes +
-    //         farmers[msg.sender].bondNodes +
-    //         _amount;
-    //     require(nodesOwned < 101, "Max Chickens Owned");
-    //     Farmer memory farmer;
-    //     if (farmers[msg.sender].exists) {
-    //         farmer = farmers[msg.sender];
-    //     } else {
-    //         farmer = Farmer(true, 0, 0, 0, 0, 0);
-    //         farmersAddresses.push(msg.sender);
-    //     }
-    //     uint256 usdcAmount = getBondCost();
-    //     uint256 transactionTotal = usdcAmount.mul(_amount);
-    //     _transferFrom(usdc, msg.sender, address(treasury), transactionTotal);
-    //     farmers[msg.sender] = farmer;
-    //     updateClaims(msg.sender);
-    //     farmers[msg.sender].bondNodes += _amount;
-    //     totalNodes += _amount;
-    // }
+    function bondChickens(uint256 _amount) external payable {
+        require(isLive, "Platform is offline");
+        require(
+            block.timestamp >= bondNodeStartTime,
+            "BondNode not available yet"
+        );
+
+        uint256 chickenBalance = chickenContract.balanceOf(msg.sender);
+        uint256 nodesOwned = chickenBalance +
+            farmers[msg.sender].bondNodes +
+            _amount;
+        require(nodesOwned < 101, "Max Chickens Owned");
+        Farmer memory farmer;
+        if (farmers[msg.sender].exists) {
+            farmer = farmers[msg.sender];
+        } else {
+            farmer = Farmer(true, 0, 0, 0, 0, 0);
+            farmersAddresses.push(msg.sender);
+        }
+        uint256 usdcAmount = getBondCost();
+        uint256 transactionTotal = usdcAmount.mul(_amount);
+        uint256 usdcBalance = usdc.balanceOf(msg.sender);
+        require(usdcBalance >= transactionTotal, "Not enough $USDC");
+        _transferFrom(usdc, msg.sender, address(treasury), transactionTotal);
+
+        chickenContract.buyChickens(msg.sender, _amount);
+        farmers[msg.sender] = farmer;
+        updateClaims(msg.sender, _amount);
+        farmers[msg.sender].bondNodes += _amount;
+        totalNodes += _amount;
+
+        emit ChickensBonded(msg.sender, _amount);
+    }
 
     // function awardNode(address _address, uint256 _amount) public onlyOwner {
     //     uint256 nodesOwned = farmers[_address].eggsNodes +
@@ -275,12 +310,18 @@ contract ChickenFarmButBetter is Ownable {
     //     totalNodes++;
     // }
 
-    function updateClaims(address _address) internal {
+    function updateClaims(
+        address _address,
+        uint256 numberOfNewChickens
+    ) internal {
+        uint256 chickensOwned = chickenContract.balanceOf(msg.sender);
+        uint256 chickenBalanceToCalcFrom = chickensOwned.sub(
+            numberOfNewChickens
+        );
         uint256 time = block.timestamp;
         uint256 timerFrom = farmers[_address].lastUpdate;
         if (timerFrom > 0)
-            farmers[_address].claimsEggs += farmers[_address]
-                .nftBalance
+            farmers[_address].claimsEggs += chickenBalanceToCalcFrom
                 .mul(nodeBase)
                 .mul(dailyInterest)
                 .mul((time.sub(timerFrom)))
@@ -343,7 +384,7 @@ contract ChickenFarmButBetter is Ownable {
     }
 
     function calculateTax() public returns (uint256) {
-        updateClaims(msg.sender);
+        updateClaims(msg.sender, 0);
         uint256 taxEggs = farmers[msg.sender].claimsEggs.div(100).mul(
             claimTaxEggs
         );
@@ -351,15 +392,21 @@ contract ChickenFarmButBetter is Ownable {
             claimTaxBond
         );
         uint256 tax = taxEggs.add(taxBond);
+
+        console.log("Calculated Tax", tax);
         return tax;
     }
 
-    function claim() external payable {
-        //Ensure msg.sender is sender
-
+    function claim() external {
         require(
             farmers[msg.sender].exists,
             "sender must be registered farmer to claim yields"
+        );
+
+        uint256 nodesOwned = chickenContract.balanceOf(msg.sender);
+        require(
+            nodesOwned > 0,
+            "sender must own at least one chicken to claim yields"
         );
 
         uint256 tax = calculateTax();
@@ -368,12 +415,15 @@ contract ChickenFarmButBetter is Ownable {
         );
         uint256 toBurn = tax;
         uint256 toFarmer = reward.sub(tax);
+
         if (reward > 0) {
             farmers[msg.sender].claimsEggs = 0;
             farmers[msg.sender].claimsBond = 0;
             eggs.mint(msg.sender, toFarmer);
             eggs.burn(msg.sender, toBurn);
         }
+
+        emit RewardsClaimed(msg.sender, reward);
     }
 
     //Platform Info
