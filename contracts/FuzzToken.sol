@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "./Interfaces/IBETTEREGG.sol";
+import "./Interfaces/IFUZZTOKEN.sol";
 
 interface IUniswapV2Factory {
     function createPair(
@@ -29,7 +29,7 @@ interface IUniswapV2Router02 {
     ) external returns (uint amountA, uint amountB, uint liquidity);
 }
 
-contract BetterEgg is IBETTEREGG, ERC20, Ownable {
+contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
     uint256 private initialSupply;
     uint256 public maxSupply;
     address public uniswapPair;
@@ -51,12 +51,12 @@ contract BetterEgg is IBETTEREGG, ERC20, Ownable {
         address _treasuryAddress
     ) ERC20("EGGS", "EGGS") {
         IUniswapV2Router02 _uniswapRouter = IUniswapV2Router02(
-            0x60aE616a2155Ee3d9A68541Ba4544862310933d4
+            0xB6120De62561D702087142DE405EEB02c18873Bc
         );
         uniswapRouter = _uniswapRouter;
         uniswapPair = IUniswapV2Factory(_uniswapRouter.factory()).createPair(
             address(this),
-            0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7
+            0x5806E416dA447b267cEA759358cF22Cc41FAE80F
         );
         initialSupply = _initialSupply;
         maxSupply = _maxSupply;

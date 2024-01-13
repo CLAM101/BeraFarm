@@ -5,17 +5,12 @@ import { ethers } from "hardhat";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { BlockTag, Log } from "@ethersproject/abstract-provider";
 import { deployContracts } from "./testHelpers/deploy-contracts";
-import {
-  BetterChicken,
-  ChickenFarmButBetter,
-  BetterEgg,
-  MockUsdc,
-} from "../typechain-types";
+import { BeraCub, BeraFarm, FuzzToken, MockUsdc } from "../typechain-types";
 
 describe("Better Chicken NFT Tests", async function () {
-  let betterChicken: BetterChicken,
-    chickenFarmButBetter: ChickenFarmButBetter,
-    betterEgg: BetterEgg,
+  let beraCub: BeraCub,
+    beraFarm: BeraFarm,
+    fuzzToken: FuzzToken,
     mockUSDC: MockUsdc,
     owner: HardhatEthersSigner,
     otherAccount: HardhatEthersSigner,
@@ -33,27 +28,27 @@ describe("Better Chicken NFT Tests", async function () {
     fourthAccount = fixture.fourthAccount;
     fifthAccount = fixture.fifthAccount;
     sixthAccount = fixture.sixthAccount;
-    betterChicken = fixture.betterChicken;
-    betterEgg = fixture.betterEgg;
-    chickenFarmButBetter = fixture.chickenFarmButBetter;
+    beraCub = fixture.beraCub;
+    fuzzToken = fixture.fuzzToken;
+    beraFarm = fixture.beraFarm;
   });
 
   describe("Better Chicken Farm Tests", async function () {
     it("Allows owner to set platform state to live", async function () {
-      await expect(chickenFarmButBetter.connect(owner).setPlatformState(true))
-        .to.not.be.reverted;
+      await expect(beraFarm.connect(owner).setPlatformState(true)).to.not.be
+        .reverted;
     });
-    it("Allows the purchase of two chickens for 20 BetterEgg", async function () {
+    it("Allows the purchase of two chickens for 20 fuzzToken", async function () {
       await expect(
-        betterEgg
+        fuzzToken
           .connect(owner)
-          .approve(chickenFarmButBetter.target, ethers.parseEther("20"))
+          .approve(beraFarm.target, ethers.parseEther("20"))
       ).to.not.be.reverted;
 
       const amountOfChickens = "2";
-      const buyAndStakeChickenTx = await chickenFarmButBetter
+      const buyAndStakeChickenTx = await beraFarm
         .connect(owner)
-        .buyChickens(amountOfChickens);
+        .buyBeraCubs(amountOfChickens);
 
       const finalizedTx = await buyAndStakeChickenTx.wait();
 
@@ -64,7 +59,7 @@ describe("Better Chicken NFT Tests", async function () {
       }
 
       logs.forEach((log: Log) => {
-        const event = chickenFarmButBetter.interface.parseLog(log);
+        const event = beraFarm.interface.parseLog(log);
 
         if (event && event.name === "BoughtChickens") {
           console.log("Bought Chickens event args", event.args);
@@ -73,7 +68,7 @@ describe("Better Chicken NFT Tests", async function () {
         }
       });
 
-      const chickenBalance = await betterChicken.balanceOf(owner.address);
+      const chickenBalance = await beraCub.balanceOf(owner.address);
 
       console.log("Chicken Balance", ethers.formatUnits(chickenBalance, 0));
 
@@ -81,7 +76,7 @@ describe("Better Chicken NFT Tests", async function () {
     });
 
     it("estimates daily rewards accurately based on the daily interest set", async function () {
-      const dailyInterest = await chickenFarmButBetter.currentDailyRewards();
+      const dailyInterest = await beraFarm.currentDailyRewards();
 
       expect(ethers.formatEther(dailyInterest)).to.equal("6.0");
     });
@@ -94,7 +89,7 @@ describe("Better Chicken NFT Tests", async function () {
       await ethers.provider.send("evm_increaseTime", [stakingDuration]);
       await ethers.provider.send("evm_mine");
 
-      const claimRewardsTx = await chickenFarmButBetter.connect(owner).claim();
+      const claimRewardsTx = await beraFarm.connect(owner).claim();
 
       const finalizedTx = await claimRewardsTx.wait(1);
 
@@ -105,7 +100,7 @@ describe("Better Chicken NFT Tests", async function () {
       }
 
       logs.forEach((log: Log) => {
-        const event = chickenFarmButBetter.interface.parseLog(log);
+        const event = beraFarm.interface.parseLog(log);
 
         if (event && event.name === "RewardsClaimed") {
           console.log("Rewards Claimed", event.args);
@@ -116,22 +111,22 @@ describe("Better Chicken NFT Tests", async function () {
     });
 
     it("Should allow the user to bond chickens using USDC, transfer USDC to the treasury and transfer the chickens to the users wallet", async function () {
-      const bondCost = await chickenFarmButBetter.getBondCost();
+      const bondCost = await beraFarm.getBondCost();
 
       console.log("Bond Cost", ethers.formatUnits(bondCost, 6));
 
       await expect(
         mockUSDC
           .connect(owner)
-          .approve(chickenFarmButBetter.target, ethers.parseEther("20"))
+          .approve(beraFarm.target, ethers.parseEther("20"))
       ).to.not.be.reverted;
 
       const amountOfChickensToBond = "2";
       const expectedTotalChickenBalance = "4";
 
-      const bondChickenTx = await chickenFarmButBetter
+      const bondChickenTx = await beraFarm
         .connect(owner)
-        .bondChickens(amountOfChickensToBond);
+        .bondBeras(amountOfChickensToBond);
 
       const finalizedTx = await bondChickenTx.wait(1);
 
@@ -142,7 +137,7 @@ describe("Better Chicken NFT Tests", async function () {
       }
 
       logs.forEach((log: Log) => {
-        const event = chickenFarmButBetter.interface.parseLog(log);
+        const event = beraFarm.interface.parseLog(log);
 
         if (event && event.name === "ChickensBonded") {
           console.log("ChickensBonded", event.args);
@@ -151,7 +146,7 @@ describe("Better Chicken NFT Tests", async function () {
         }
       });
 
-      const chickenBalance = await betterChicken.balanceOf(owner.address);
+      const chickenBalance = await beraCub.balanceOf(owner.address);
 
       console.log("Chicken Balance", ethers.formatUnits(chickenBalance, 0));
 

@@ -1,25 +1,20 @@
 import "@nomicfoundation/hardhat-chai-matchers";
 import { ethers } from "hardhat";
-import {
-  BetterChicken,
-  BetterEgg,
-  ChickenFarmButBetter,
-  MockUsdc,
-} from "../../typechain-types";
+import { BeraCub, FuzzToken, BeraFarm, MockUsdc } from "../../typechain-types";
 import { Helpers } from "./helpers";
-import { wavaxABI } from "./ABI/wavax-abi";
-import { joeABI } from "./ABI/joe-abi";
+import { wBeraABI } from "./ABI/wbera-abi";
+import { bexABI } from "./ABI/bex-abi";
 import { ERC20ABI } from "./ABI/ERC20-abi";
 
 export async function deployContracts() {
-  let betterChicken: BetterChicken;
-  let betterEgg: BetterEgg;
-  let chickenFarmButBetter: ChickenFarmButBetter;
+  let beraCub: BeraCub;
+  let fuzzToken: FuzzToken;
+  let beraFarm: BeraFarm;
   let mockUSDC: MockUsdc;
   const helpers = new Helpers();
-  const wavaxAddress = "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7";
-  const routerAddress = "0x60aE616a2155Ee3d9A68541Ba4544862310933d4";
-  const factoryAddress = "0x9Ad6C38BE94206cA50bb0d90783181662f0Cfa10";
+  const wBeraAddress = "0x5806E416dA447b267cEA759358cF22Cc41FAE80F";
+  const routerAddress = "0xB6120De62561D702087142DE405EEB02c18873Bc";
+  const factoryAddress = "0x5C4cDd0160c0CB4C606365dD98783064335A9ce0";
   // Contracts are deployed using the first signer/account by default
   const [
     owner,
@@ -30,56 +25,54 @@ export async function deployContracts() {
     sixthAccount,
   ] = await ethers.getSigners();
 
-  const BetterChicken = await ethers.getContractFactory("BetterChicken");
-  const ChickenFarmButBetter = await ethers.getContractFactory(
-    "ChickenFarmButBetter"
-  );
-  const BetterEgg = await ethers.getContractFactory("BetterEgg");
+  const BeraCub = await ethers.getContractFactory("BeraCub");
+  const ChickenFarmButBetter = await ethers.getContractFactory("BeraFarm");
+  const FuzzToken = await ethers.getContractFactory("FuzzToken");
   const MockUSDC = await ethers.getContractFactory("MockUsdc");
 
-  betterChicken = (await BetterChicken.deploy({
+  beraCub = (await BeraCub.deploy({
     gasLimit: 30000000,
-  })) as unknown as BetterChicken;
+  })) as unknown as BeraCub;
 
-  await betterChicken.waitForDeployment();
+  await beraCub.waitForDeployment();
 
-  console.log("BetterChicken Deployed At:", betterChicken.target);
+  console.log("BetterChicken Deployed At:", beraCub.target);
 
-  betterEgg = (await BetterEgg.deploy(
+  fuzzToken = (await FuzzToken.deploy(
     ethers.parseEther("1000000000"),
     ethers.parseEther("1000000000000"),
     otherAccount.address
-  )) as unknown as BetterEgg;
-  await betterEgg.waitForDeployment();
+  )) as unknown as FuzzToken;
+  await fuzzToken.waitForDeployment();
 
-  await helpers.wrapTokens(wavaxAddress, "200", owner, wavaxABI);
+  await helpers.wrapTokens(wBeraAddress, "200", owner, wBeraABI);
 
-  const pair = await betterEgg.getPair();
+  const pair = await fuzzToken.getPair();
 
   const LPContract = new ethers.Contract(pair, ERC20ABI, owner);
 
-  console.log("Token Deployed At:", betterEgg.target);
+  console.log("Token Deployed At:", fuzzToken.target);
 
-  const wrapperContract = new ethers.Contract(wavaxAddress, wavaxABI, owner);
+  const wrapperContract = new ethers.Contract(wBeraAddress, wBeraABI, owner);
 
   await wrapperContract
     .connect(owner)
     .approve(routerAddress, ethers.parseEther("200"));
 
-  await betterEgg
+  await fuzzToken
     .connect(owner)
     .approve(routerAddress, ethers.parseEther("1000000"));
 
   await helpers.addLiquidity(
     routerAddress,
-    wavaxAddress,
-    betterEgg.target,
+    wBeraAddress,
+    fuzzToken.target,
     ethers.parseEther("200"),
     ethers.parseEther("1000000"),
     ethers.parseEther("200"),
     ethers.parseEther("1000000"),
     owner.address,
-    joeABI,
+    bexABI,
     owner
   );
 
@@ -94,9 +87,9 @@ export async function deployContracts() {
 
   console.log("Token Deployed At:", mockUSDC.target);
 
-  chickenFarmButBetter = (await ChickenFarmButBetter.deploy(
-    betterChicken.target,
-    betterEgg.target,
+  beraFarm = (await ChickenFarmButBetter.deploy(
+    beraCub.target,
+    fuzzToken.target,
     mockUSDC.target,
     pair,
     otherAccount.address,
@@ -107,19 +100,19 @@ export async function deployContracts() {
     {
       gasLimit: 30000000,
     }
-  )) as unknown as ChickenFarmButBetter;
+  )) as unknown as BeraFarm;
 
-  await chickenFarmButBetter.waitForDeployment();
+  await beraFarm.waitForDeployment();
 
-  await betterEgg.connect(owner).addController(chickenFarmButBetter.target);
+  await fuzzToken.connect(owner).addController(beraFarm.target);
 
-  console.log("Chicken Farm But Better:", chickenFarmButBetter.target);
+  console.log("Chicken Farm But Better:", beraFarm.target);
 
   return {
-    betterChickenAbi: BetterChicken.interface,
-    betterChicken,
-    betterEgg,
-    chickenFarmButBetter,
+    betterChickenAbi: fuzzToken.interface,
+    beraCub,
+    fuzzToken,
+    beraFarm,
     owner,
     otherAccount,
     thirdAccount,

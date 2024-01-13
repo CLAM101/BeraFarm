@@ -1,4 +1,4 @@
-export const joeABI = [
+export const bexABI = [
   {
     inputs: [
       {
@@ -8,7 +8,7 @@ export const joeABI = [
       },
       {
         internalType: "address",
-        name: "_WAVAX",
+        name: "_WETH",
         type: "address",
       },
     ],
@@ -17,7 +17,7 @@ export const joeABI = [
   },
   {
     inputs: [],
-    name: "WAVAX",
+    name: "WETH",
     outputs: [
       {
         internalType: "address",
@@ -111,7 +111,7 @@ export const joeABI = [
       },
       {
         internalType: "uint256",
-        name: "amountAVAXMin",
+        name: "amountETHMin",
         type: "uint256",
       },
       {
@@ -125,7 +125,7 @@ export const joeABI = [
         type: "uint256",
       },
     ],
-    name: "addLiquidityAVAX",
+    name: "addLiquidityETH",
     outputs: [
       {
         internalType: "uint256",
@@ -134,7 +134,7 @@ export const joeABI = [
       },
       {
         internalType: "uint256",
-        name: "amountAVAX",
+        name: "amountETH",
         type: "uint256",
       },
       {
@@ -367,7 +367,7 @@ export const joeABI = [
       },
       {
         internalType: "uint256",
-        name: "amountAVAXMin",
+        name: "amountETHMin",
         type: "uint256",
       },
       {
@@ -381,7 +381,7 @@ export const joeABI = [
         type: "uint256",
       },
     ],
-    name: "removeLiquidityAVAX",
+    name: "removeLiquidityETH",
     outputs: [
       {
         internalType: "uint256",
@@ -390,7 +390,7 @@ export const joeABI = [
       },
       {
         internalType: "uint256",
-        name: "amountAVAX",
+        name: "amountETH",
         type: "uint256",
       },
     ],
@@ -416,7 +416,7 @@ export const joeABI = [
       },
       {
         internalType: "uint256",
-        name: "amountAVAXMin",
+        name: "amountETHMin",
         type: "uint256",
       },
       {
@@ -430,11 +430,11 @@ export const joeABI = [
         type: "uint256",
       },
     ],
-    name: "removeLiquidityAVAXSupportingFeeOnTransferTokens",
+    name: "removeLiquidityETHSupportingFeeOnTransferTokens",
     outputs: [
       {
         internalType: "uint256",
-        name: "amountAVAX",
+        name: "amountETH",
         type: "uint256",
       },
     ],
@@ -460,7 +460,7 @@ export const joeABI = [
       },
       {
         internalType: "uint256",
-        name: "amountAVAXMin",
+        name: "amountETHMin",
         type: "uint256",
       },
       {
@@ -494,7 +494,7 @@ export const joeABI = [
         type: "bytes32",
       },
     ],
-    name: "removeLiquidityAVAXWithPermit",
+    name: "removeLiquidityETHWithPermit",
     outputs: [
       {
         internalType: "uint256",
@@ -503,7 +503,7 @@ export const joeABI = [
       },
       {
         internalType: "uint256",
-        name: "amountAVAX",
+        name: "amountETH",
         type: "uint256",
       },
     ],
@@ -529,7 +529,7 @@ export const joeABI = [
       },
       {
         internalType: "uint256",
-        name: "amountAVAXMin",
+        name: "amountETHMin",
         type: "uint256",
       },
       {
@@ -563,11 +563,11 @@ export const joeABI = [
         type: "bytes32",
       },
     ],
-    name: "removeLiquidityAVAXWithPermitSupportingFeeOnTransferTokens",
+    name: "removeLiquidityETHWithPermitSupportingFeeOnTransferTokens",
     outputs: [
       {
         internalType: "uint256",
-        name: "amountAVAX",
+        name: "amountETH",
         type: "uint256",
       },
     ],
@@ -671,7 +671,7 @@ export const joeABI = [
         type: "uint256",
       },
     ],
-    name: "swapAVAXForExactTokens",
+    name: "swapETHForExactTokens",
     outputs: [
       {
         internalType: "uint256[]",
@@ -705,7 +705,7 @@ export const joeABI = [
         type: "uint256",
       },
     ],
-    name: "swapExactAVAXForTokens",
+    name: "swapExactETHForTokens",
     outputs: [
       {
         internalType: "uint256[]",
@@ -739,7 +739,7 @@ export const joeABI = [
         type: "uint256",
       },
     ],
-    name: "swapExactAVAXForTokensSupportingFeeOnTransferTokens",
+    name: "swapExactETHForTokensSupportingFeeOnTransferTokens",
     outputs: [],
     stateMutability: "payable",
     type: "function",
@@ -772,7 +772,7 @@ export const joeABI = [
         type: "uint256",
       },
     ],
-    name: "swapExactTokensForAVAX",
+    name: "swapExactTokensForETH",
     outputs: [
       {
         internalType: "uint256[]",
@@ -811,7 +811,7 @@ export const joeABI = [
         type: "uint256",
       },
     ],
-    name: "swapExactTokensForAVAXSupportingFeeOnTransferTokens",
+    name: "swapExactTokensForETHSupportingFeeOnTransferTokens",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -916,7 +916,7 @@ export const joeABI = [
         type: "uint256",
       },
     ],
-    name: "swapTokensForExactAVAX",
+    name: "swapTokensForExactETH",
     outputs: [
       {
         internalType: "uint256[]",
