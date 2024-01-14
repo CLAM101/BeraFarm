@@ -16,7 +16,7 @@ interface IUniswapV2Pair {
     function getReserves() external view returns (uint112, uint112, uint32);
 }
 
-interface IJoeFactory {
+interface IXDEXFactory {
     function getPair(
         address tokenA,
         address tokenB
@@ -48,12 +48,12 @@ contract BeraFarm is Ownable {
     // check how the bex works and if it is a fork of uniswap
     IUniswapV2Pair private fuzzBeraPair;
     IUniswapV2Pair private honeyWberaPair;
-    IJoeFactory private factory;
+    IXDEXFactory private factory;
 
     address public treasury;
     address private burn;
 
-    //uint256 beraPrice = 36;
+    uint256 beraPrice = 1000;
     uint256 private dailyInterest;
     uint256 private beraCubCost;
     uint256 private beraCubBase;
@@ -84,7 +84,7 @@ contract BeraFarm is Ownable {
 
     //Constructor
     constructor(
-        address _beraContract,
+        address _beraContract, // address of Bera Cub NFT contract
         address _fuzz, //Address of the $FUZZ token to use in the platform
         address _usdc, //Address of USDC stablecoin
         address _pair, //Address of the liquidity pool
@@ -99,7 +99,7 @@ contract BeraFarm is Ownable {
         fuzzBeraPair = IUniswapV2Pair(_pair);
         usdc = IERC20(_usdc);
         beraCubNftContract = IBERACUB(_beraContract);
-        factory = IJoeFactory(_factory);
+        factory = IXDEXFactory(_factory);
 
         // these are testnet toke addresses adn would need to be replaced in the case of a mainnet deployment
         honeyWberaPair = IUniswapV2Pair(
@@ -108,38 +108,28 @@ contract BeraFarm is Ownable {
                 0x5806E416dA447b267cEA759358cF22Cc41FAE80F
             )
         );
+
         treasury = _treasury;
         dailyInterest = _dailyInterest;
         beraCubCost = _nodeCost.mul(1e18);
+
+        console.log("Bera cub cost", beraCubCost);
         beraCubBase = SafeMath.mul(10, 1e18);
         bondDiscount = _bondDiscount;
     }
 
     //Price Checking Functions
-
     function getPrice() public view returns (uint256) {
-        (uint256 reserveHoney0, uint256 reserveHoney1, ) = honeyWberaPair
-            .getReserves();
-
-        console.log(
-            "Reserve0usdc",
-            reserveHoney0,
-            "Reserve1usdc",
-            reserveHoney1
-        );
-
-        // just take note of this there may be an issue with determining price this way, might also be better to not ahve it as a global variable
-        uint256 beraPrice = reserveHoney1.div(reserveHoney0.mul(1e12));
-
-        console.log("calculated avax price", beraPrice);
-
         (uint256 reserve0, uint256 reserve1, ) = fuzzBeraPair.getReserves();
 
         console.log("Reserve0", reserve0, "Reserve1", reserve1);
 
         require(reserve0 > 0 && reserve1 > 0, "Reserves not available");
 
-        uint256 price = (uint256(reserve1) * beraPrice) / uint256(reserve0);
+        uint256 convertedBeraToHoney = beraPrice.mul(1e18) * reserve0;
+        uint256 price = convertedBeraToHoney / reserve1;
+
+        console.log("calculated fuzz price", price);
 
         return price;
     }
@@ -148,11 +138,13 @@ contract BeraFarm is Ownable {
 
     function getBondCost() public view returns (uint256) {
         uint256 tokenPrice = getPrice();
-
+        // pricing still coming out wrong on the bond calc start here
         console.log("Token price from get price function", tokenPrice);
-        uint256 basePrice = beraCubCost.mul(tokenPrice).div(1e18);
+        uint256 basePrice = beraCubCost.mul(tokenPrice);
         uint256 discount = SafeMath.sub(100, bondDiscount);
         uint256 bondPrice = basePrice.mul(discount).div(100);
+
+        console.log("Bond price", bondPrice);
         return bondPrice;
     }
 
@@ -185,10 +177,10 @@ contract BeraFarm is Ownable {
         isLive = _isLive;
     }
 
-    // will likely reeplace this if I can get an accurate price or a feed from an oracle
-    // function setBeraPrice(uint256 _beraPrice) public onlyOwner {
-    //     beraPrice = _beraPrice;
-    // }
+    // will likely reeplace this if I can get an accurate price or a feed from an oracle when mainnet launches
+    function setBeraPrice(uint256 _beraPrice) public onlyOwner {
+        beraPrice = _beraPrice;
+    }
 
     function setDailyInterest(uint256 _dailyInterest) public onlyOwner {
         dailyInterest = _dailyInterest;
@@ -266,6 +258,8 @@ contract BeraFarm is Ownable {
         uint256 usdcAmount = getBondCost();
         uint256 transactionTotal = usdcAmount.mul(_amount);
         uint256 usdcBalance = usdc.balanceOf(msg.sender);
+
+        console.log("USDC Balance of wallet", usdcBalance);
         require(usdcBalance >= transactionTotal, "Not enough $USDC");
         _transferFrom(usdc, msg.sender, address(treasury), transactionTotal);
 

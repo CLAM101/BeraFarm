@@ -14,7 +14,8 @@ export async function deployContracts() {
   const helpers = new Helpers();
   const wBeraAddress = "0x5806E416dA447b267cEA759358cF22Cc41FAE80F";
   const routerAddress = "0xB6120De62561D702087142DE405EEB02c18873Bc";
-  const factoryAddress = "0x5C4cDd0160c0CB4C606365dD98783064335A9ce0";
+  const factoryAddress = "0xad88D4ABbE0d0672f00eB3B83E6518608d82e95d";
+
   // Contracts are deployed using the first signer/account by default
   const [
     owner,
@@ -26,7 +27,7 @@ export async function deployContracts() {
   ] = await ethers.getSigners();
 
   const BeraCub = await ethers.getContractFactory("BeraCub");
-  const ChickenFarmButBetter = await ethers.getContractFactory("BeraFarm");
+  const BeraFarm = await ethers.getContractFactory("BeraFarm");
   const FuzzToken = await ethers.getContractFactory("FuzzToken");
   const MockUSDC = await ethers.getContractFactory("MockUsdc");
 
@@ -81,13 +82,13 @@ export async function deployContracts() {
   console.log("LP Balance:", LPBalance.toString());
 
   mockUSDC = (await MockUSDC.deploy(
-    ethers.parseUnits("100000", 6)
+    ethers.parseEther("1000000")
   )) as unknown as MockUsdc;
   await mockUSDC.waitForDeployment();
 
   console.log("Token Deployed At:", mockUSDC.target);
 
-  beraFarm = (await ChickenFarmButBetter.deploy(
+  beraFarm = (await BeraFarm.deploy(
     beraCub.target,
     fuzzToken.target,
     mockUSDC.target,
@@ -106,7 +107,7 @@ export async function deployContracts() {
 
   await fuzzToken.connect(owner).addController(beraFarm.target);
 
-  console.log("Chicken Farm But Better:", beraFarm.target);
+  console.log("Bera Farm Deployed:", beraFarm.target);
 
   return {
     betterChickenAbi: fuzzToken.interface,

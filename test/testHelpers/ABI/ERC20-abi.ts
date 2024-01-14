@@ -74,4 +74,19 @@ export const ERC20ABI = [
     name: "Approval",
     type: "event",
   },
+
+  {
+    constant: true,
+    inputs: [],
+    name: "decimals",
+    outputs: [
+      {
+        name: "",
+        type: "uint8",
+      },
+    ],
+    payable: false,
+    stateMutability: "pure",
+    type: "function",
+  },
 ];

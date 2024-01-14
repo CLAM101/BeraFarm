@@ -7,7 +7,7 @@ import { BlockTag, Log } from "@ethersproject/abstract-provider";
 import { deployContracts } from "./testHelpers/deploy-contracts";
 import { BeraCub, BeraFarm, FuzzToken, MockUsdc } from "../typechain-types";
 
-describe("Better Chicken NFT Tests", async function () {
+describe("Bera Farm Tests", async function () {
   let beraCub: BeraCub,
     beraFarm: BeraFarm,
     fuzzToken: FuzzToken,
@@ -33,24 +33,24 @@ describe("Better Chicken NFT Tests", async function () {
     beraFarm = fixture.beraFarm;
   });
 
-  describe("Better Chicken Farm Tests", async function () {
+  describe("Bera Farm Tests", async function () {
     it("Allows owner to set platform state to live", async function () {
       await expect(beraFarm.connect(owner).setPlatformState(true)).to.not.be
         .reverted;
     });
-    it("Allows the purchase of two chickens for 20 fuzzToken", async function () {
+    it("Allows the purchase of two Bera Cubs for 20 fuzzToken", async function () {
       await expect(
         fuzzToken
           .connect(owner)
           .approve(beraFarm.target, ethers.parseEther("20"))
       ).to.not.be.reverted;
 
-      const amountOfChickens = "2";
-      const buyAndStakeChickenTx = await beraFarm
+      const amountOfBeraCubs = "2";
+      const buyAndStakeBeraCubTx = await beraFarm
         .connect(owner)
-        .buyBeraCubs(amountOfChickens);
+        .buyBeraCubs(amountOfBeraCubs);
 
-      const finalizedTx = await buyAndStakeChickenTx.wait();
+      const finalizedTx = await buyAndStakeBeraCubTx.wait();
 
       let logs: Log[] = [];
 
@@ -61,27 +61,27 @@ describe("Better Chicken NFT Tests", async function () {
       logs.forEach((log: Log) => {
         const event = beraFarm.interface.parseLog(log);
 
-        if (event && event.name === "BoughtChickens") {
-          console.log("Bought Chickens event args", event.args);
+        if (event && event.name === "BoughtBeraCubs") {
+          console.log("Bought Bera Cub event args", event.args);
           expect(event.args.sender).to.equal(owner.address);
-          expect(event.args.amount).to.equal(amountOfChickens);
+          expect(event.args.amount).to.equal(amountOfBeraCubs);
         }
       });
 
-      const chickenBalance = await beraCub.balanceOf(owner.address);
+      const beraCubBalance = await beraCub.balanceOf(owner.address);
 
-      console.log("Chicken Balance", ethers.formatUnits(chickenBalance, 0));
+      console.log("Bera Cub Balance", ethers.formatUnits(beraCubBalance, 0));
 
-      expect(chickenBalance).to.equal(amountOfChickens);
+      expect(beraCubBalance).to.equal(amountOfBeraCubs);
     });
 
-    it("estimates daily rewards accurately based on the daily interest set", async function () {
+    it("Estimates daily rewards accurately based on the daily interest set", async function () {
       const dailyInterest = await beraFarm.currentDailyRewards();
 
       expect(ethers.formatEther(dailyInterest)).to.equal("6.0");
     });
 
-    it("Should pay out the correct amount of Better egg for a 24 hour period when the user claims", async function () {
+    it("Should pay out the correct amount of Fuzz Token for a 24 hour period when the user claims", async function () {
       const stakingDuration = 24 * 3600;
 
       const expectedReward = ethers.parseEther("12");
@@ -110,7 +110,7 @@ describe("Better Chicken NFT Tests", async function () {
       });
     });
 
-    it("Should allow the user to bond chickens using USDC, transfer USDC to the treasury and transfer the chickens to the users wallet", async function () {
+    it("Should allow the user to bond Bera Cubs using Honey, transfer Honey to the treasury and transfer the Bera Cubs to the users wallet", async function () {
       const bondCost = await beraFarm.getBondCost();
 
       console.log("Bond Cost", ethers.formatUnits(bondCost, 6));
@@ -121,14 +121,14 @@ describe("Better Chicken NFT Tests", async function () {
           .approve(beraFarm.target, ethers.parseEther("20"))
       ).to.not.be.reverted;
 
-      const amountOfChickensToBond = "2";
-      const expectedTotalChickenBalance = "4";
+      const amountOfBeraCubsToBond = "2";
+      const expectedTotalBeraCubBalance = "4";
 
-      const bondChickenTx = await beraFarm
+      const bondBeraCubTx = await beraFarm
         .connect(owner)
-        .bondBeras(amountOfChickensToBond);
+        .bondBeras(amountOfBeraCubsToBond);
 
-      const finalizedTx = await bondChickenTx.wait(1);
+      const finalizedTx = await bondBeraCubTx.wait(1);
 
       let logs: Log[] = [];
 
@@ -139,18 +139,18 @@ describe("Better Chicken NFT Tests", async function () {
       logs.forEach((log: Log) => {
         const event = beraFarm.interface.parseLog(log);
 
-        if (event && event.name === "ChickensBonded") {
-          console.log("ChickensBonded", event.args);
+        if (event && event.name === "BeraCubsBonded") {
+          console.log("BeraCubsBonded args", event.args);
           expect(event.args.sender).to.equal(owner.address);
-          expect(event.args.amount).to.equal(amountOfChickensToBond);
+          expect(event.args.amount).to.equal(amountOfBeraCubsToBond);
         }
       });
 
-      const chickenBalance = await beraCub.balanceOf(owner.address);
+      const beraCubBalance = await beraCub.balanceOf(owner.address);
 
-      console.log("Chicken Balance", ethers.formatUnits(chickenBalance, 0));
+      console.log("Chicken Balance", ethers.formatUnits(beraCubBalance, 0));
 
-      expect(chickenBalance).to.equal(expectedTotalChickenBalance);
+      expect(beraCubBalance).to.equal(expectedTotalBeraCubBalance);
     });
   });
 });

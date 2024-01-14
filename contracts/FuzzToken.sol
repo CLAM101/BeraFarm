@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./Interfaces/IFUZZTOKEN.sol";
+import "hardhat/console.sol";
 
 interface IUniswapV2Factory {
     function createPair(
@@ -54,6 +55,7 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
             0xB6120De62561D702087142DE405EEB02c18873Bc
         );
         uniswapRouter = _uniswapRouter;
+
         uniswapPair = IUniswapV2Factory(_uniswapRouter.factory()).createPair(
             address(this),
             0x5806E416dA447b267cEA759358cF22Cc41FAE80F
