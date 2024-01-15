@@ -113,12 +113,18 @@ describe("Bera Farm Tests", async function () {
     it("Should allow the user to bond Bera Cubs using Honey, transfer Honey to the treasury and transfer the Bera Cubs to the users wallet", async function () {
       const bondCost = await beraFarm.getBondCost();
 
-      console.log("Bond Cost", ethers.formatUnits(bondCost, 6));
+      //based on Bera Price of 1000 and liquidity of 1 000 000 Fuzz and 200 Bera added to pool
+      const expectedBondCost = ethers.parseEther("1.7");
+
+      console.log("Bond Cost In Test", ethers.formatEther(bondCost) + "$HONEY");
+
+      expect(bondCost).to.equal(expectedBondCost);
+
+      // expected cost of bonding two BeraCubs with Honey
+      const expectedTotalCost = ethers.parseEther("3.4");
 
       await expect(
-        mockUSDC
-          .connect(owner)
-          .approve(beraFarm.target, ethers.parseEther("20"))
+        mockUSDC.connect(owner).approve(beraFarm.target, expectedTotalCost)
       ).to.not.be.reverted;
 
       const amountOfBeraCubsToBond = "2";

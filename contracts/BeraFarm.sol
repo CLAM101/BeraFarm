@@ -49,7 +49,6 @@ contract BeraFarm is Ownable {
     IUniswapV2Pair private fuzzBeraPair;
     IUniswapV2Pair private honeyWberaPair;
     IXDEXFactory private factory;
-
     address public treasury;
     address private burn;
 
@@ -112,39 +111,31 @@ contract BeraFarm is Ownable {
         treasury = _treasury;
         dailyInterest = _dailyInterest;
         beraCubCost = _nodeCost.mul(1e18);
-
-        console.log("Bera cub cost", beraCubCost);
         beraCubBase = SafeMath.mul(10, 1e18);
         bondDiscount = _bondDiscount;
     }
 
     //Price Checking Functions
-    function getPrice() public view returns (uint256) {
+    function getFuzzPrice() public view returns (uint256) {
         (uint256 reserve0, uint256 reserve1, ) = fuzzBeraPair.getReserves();
-
-        console.log("Reserve0", reserve0, "Reserve1", reserve1);
 
         require(reserve0 > 0 && reserve1 > 0, "Reserves not available");
 
-        uint256 convertedBeraToHoney = beraPrice.mul(1e18) * reserve0;
-        uint256 price = convertedBeraToHoney / reserve1;
-
-        console.log("calculated fuzz price", price);
+        uint256 convertedBeraToHoney = beraPrice.mul(1e18) * reserve1;
+        uint256 price = convertedBeraToHoney / reserve0;
 
         return price;
     }
 
     //Bond Setup
-
     function getBondCost() public view returns (uint256) {
-        uint256 tokenPrice = getPrice();
+        uint256 tokenPrice = getFuzzPrice();
         // pricing still coming out wrong on the bond calc start here
-        console.log("Token price from get price function", tokenPrice);
-        uint256 basePrice = beraCubCost.mul(tokenPrice);
+
+        uint256 basePrice = beraCubCost.mul(tokenPrice).div(1e18);
         uint256 discount = SafeMath.sub(100, bondDiscount);
         uint256 bondPrice = basePrice.mul(discount).div(100);
 
-        console.log("Bond price", bondPrice);
         return bondPrice;
     }
 
@@ -213,9 +204,9 @@ contract BeraFarm is Ownable {
         uint256 fuzzOwned = fuzz.balanceOf(msg.sender);
 
         uint256 transactionTotal = beraCubCost.mul(_amount);
-        require(beraCubBalance < 100, "Max Chickens Owned");
+        require(beraCubBalance < 100, "Max Bera Cubs Owned");
 
-        require(fuzzOwned >= transactionTotal, "Not enough $EGGS");
+        require(fuzzOwned >= transactionTotal, "Not enough $FUZZ");
         beraCubNftContract.buyBeraCubs(msg.sender, _amount);
 
         Farmer memory farmer;
@@ -257,9 +248,9 @@ contract BeraFarm is Ownable {
         }
         uint256 usdcAmount = getBondCost();
         uint256 transactionTotal = usdcAmount.mul(_amount);
+
         uint256 usdcBalance = usdc.balanceOf(msg.sender);
 
-        console.log("USDC Balance of wallet", usdcBalance);
         require(usdcBalance >= transactionTotal, "Not enough $USDC");
         _transferFrom(usdc, msg.sender, address(treasury), transactionTotal);
 
@@ -396,7 +387,6 @@ contract BeraFarm is Ownable {
         );
         uint256 tax = taxEggs.add(taxBond);
 
-        console.log("Calculated Tax", tax);
         return tax;
     }
 
@@ -430,7 +420,6 @@ contract BeraFarm is Ownable {
     }
 
     //Platform Info
-
     function currentDailyRewards() external view returns (uint256) {
         uint256 dailyRewards = beraCubBase.mul(dailyInterest).div(100);
         return dailyRewards;
@@ -448,7 +437,6 @@ contract BeraFarm is Ownable {
     }
 
     //SafeERC20 transferFrom
-
     function _transferFrom(
         IERC20 token,
         address from,
