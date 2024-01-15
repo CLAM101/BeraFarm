@@ -50,7 +50,7 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
         uint256 _initialSupply,
         uint256 _maxSupply,
         address _treasuryAddress
-    ) ERC20("EGGS", "EGGS") {
+    ) ERC20("Fuzz Token", "FUZZ") {
         IUniswapV2Router02 _uniswapRouter = IUniswapV2Router02(
             0xB6120De62561D702087142DE405EEB02c18873Bc
         );

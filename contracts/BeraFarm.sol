@@ -63,7 +63,7 @@ contract BeraFarm is Ownable {
     uint256 public bondBeraCubsStartTime;
 
     bool public isLive = false;
-    uint256 totalNodes = 0;
+    uint256 totalBeraCubs = 0;
 
     //Array
     address[] public farmersAddresses;
@@ -130,7 +130,6 @@ contract BeraFarm is Ownable {
     //Bond Setup
     function getBondCost() public view returns (uint256) {
         uint256 tokenPrice = getFuzzPrice();
-        // pricing still coming out wrong on the bond calc start here
 
         uint256 basePrice = beraCubCost.mul(tokenPrice).div(1e18);
         uint256 discount = SafeMath.sub(100, bondDiscount);
@@ -222,7 +221,7 @@ contract BeraFarm is Ownable {
         farmers[msg.sender] = farmer;
         updateClaims(msg.sender, _amount);
 
-        totalNodes += _amount;
+        totalBeraCubs += _amount;
 
         emit BoughtBeraCubs(msg.sender, _amount);
     }
@@ -251,36 +250,38 @@ contract BeraFarm is Ownable {
 
         uint256 usdcBalance = usdc.balanceOf(msg.sender);
 
-        require(usdcBalance >= transactionTotal, "Not enough $USDC");
+        require(usdcBalance >= transactionTotal, "Not enough $HONEY");
         _transferFrom(usdc, msg.sender, address(treasury), transactionTotal);
 
-        beraCubNftContract.buyBeraCubs(msg.sender, _amount);
+        // note to Clam nfts need to sit with the contract until the bond is complete resume with this
+        beraCubNftContract.buyBeraCubs(address(this), _amount);
         farmers[msg.sender] = farmer;
         updateClaims(msg.sender, _amount);
         farmers[msg.sender].bondBeraCubs += _amount;
-        totalNodes += _amount;
+        totalBeraCubs += _amount;
 
         emit BeraCubsBonded(msg.sender, _amount);
     }
 
-    // function awardNode(address _address, uint256 _amount) public onlyOwner {
-    //     uint256 nodesOwned = farmers[_address].eggsNodes +
-    //         farmers[_address].bondNodes +
-    //         _amount;
-    //     require(nodesOwned < 101, "Max Chickens Owned");
-    //     Farmer memory farmer;
-    //     if (farmers[_address].exists) {
-    //         farmer = farmers[_address];
-    //     } else {
-    //         farmer = Farmer(true, 0, 0, 0, 0, 0);
-    //         farmersAddresses.push(_address);
-    //     }
-    //     farmers[_address] = farmer;
-    //     updateClaims(_address);
-    //     farmers[_address].eggsNodes += _amount;
-    //     totalNodes += _amount;
-    //     farmers[_address].lastUpdate = block.timestamp;
-    // }
+    function awardNode(address _address, uint256 _amount) public onlyOwner {
+        uint256 beraCubsOwned = beraCubNftContract.balanceOf(msg.sender);
+        uint256 nodesOwned = farmers[_address].eggsNodes +
+            farmers[_address].bondNodes +
+            _amount;
+        require(nodesOwned < 101, "Max Chickens Owned");
+        Farmer memory farmer;
+        if (farmers[_address].exists) {
+            farmer = farmers[_address];
+        } else {
+            farmer = Farmer(true, 0, 0, 0, 0, 0);
+            farmersAddresses.push(_address);
+        }
+        farmers[_address] = farmer;
+        updateClaims(_address);
+        farmers[_address].eggsNodes += _amount;
+
+        farmers[_address].lastUpdate = block.timestamp;
+    }
 
     // function compoundNode() public {
     //     uint256 pendingClaims = getTotalClaimable(msg.sender);
@@ -306,11 +307,11 @@ contract BeraFarm is Ownable {
 
     function updateClaims(
         address _address,
-        uint256 numberOfNewChickens
+        uint256 numberOfNewBeraCubs
     ) internal {
         uint256 beraCubsOwned = beraCubNftContract.balanceOf(msg.sender);
         uint256 beraCubsBalanceToCalcFrom = beraCubsOwned.sub(
-            numberOfNewChickens
+            numberOfNewBeraCubs
         );
         uint256 time = block.timestamp;
         uint256 timerFrom = farmers[_address].lastUpdate;
@@ -393,13 +394,13 @@ contract BeraFarm is Ownable {
     function claim() external {
         require(
             farmers[msg.sender].exists,
-            "sender must be registered farmer to claim yields"
+            "sender must be registered Bera Cub farmer to claim yields"
         );
 
         uint256 nodesOwned = beraCubNftContract.balanceOf(msg.sender);
         require(
             nodesOwned > 0,
-            "sender must own at least one chicken to claim yields"
+            "sender must own at least one Bera Cub to claim yields"
         );
 
         uint256 tax = calculateTax();
@@ -433,7 +434,7 @@ contract BeraFarm is Ownable {
     }
 
     function getTotalNodes() external view returns (uint256) {
-        return totalNodes;
+        return beraCubNftContract.totalSupply();
     }
 
     //SafeERC20 transferFrom

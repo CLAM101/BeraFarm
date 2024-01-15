@@ -7,16 +7,21 @@ import "hardhat/console.sol";
 
 contract BeraCub is ERC721URIStorage {
     uint256 public tokenCounter;
+    uint256 public maxSupply;
+    bool public mintingOpen;
 
     event MintedBeraCub(address sender, uint256 tokenId);
+    event MintingOpened(bool mintingOpen);
+    event MintingPaused(bool mintingOpen);
 
-    constructor() ERC721("SVG NFT", "SVG") {
+    constructor(uint256 _maxSupply) ERC721("Bera Cub", "CUB") {
         tokenCounter = 0;
+        maxSupply = _maxSupply;
     }
 
     function buyBeraCubs(address _reciever, uint256 _amount) public {
         string memory tokenURI = formatTokenURI();
-
+        require(tokenCounter + _amount <= maxSupply, "All Bera Cubs Minted :(");
         for (uint256 i = 0; i < _amount; i++) {
             tokenCounter = tokenCounter + 1;
             _safeMint(_reciever, tokenCounter);
@@ -25,6 +30,20 @@ contract BeraCub is ERC721URIStorage {
 
             emit MintedBeraCub(_reciever, tokenCounter);
         }
+    }
+
+    function totalSupply() public view returns (uint256) {
+        return tokenCounter;
+    }
+
+    function openMinting() public {
+        mintingOpen = true;
+        emit MintingOpened(mintingOpen);
+    }
+
+    function pauseMinting() public {
+        mintingOpen = false;
+        emit MintingPaused(mintingOpen);
     }
 
     function formatTokenURI() public pure returns (string memory) {
