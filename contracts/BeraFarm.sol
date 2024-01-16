@@ -43,7 +43,7 @@ contract BeraFarm is Ownable {
     //Variables
     IBERACUB private beraCubNftContract;
     IFUZZTOKEN private fuzz;
-    IERC20 private usdc;
+    IERC20 private honey;
 
     // check how the bex works and if it is a fork of uniswap
     IUniswapV2Pair private fuzzBeraPair;
@@ -63,7 +63,6 @@ contract BeraFarm is Ownable {
     uint256 public bondBeraCubsStartTime;
 
     bool public isLive = false;
-    uint256 totalBeraCubs = 0;
 
     //Array
     address[] public farmersAddresses;
@@ -71,10 +70,8 @@ contract BeraFarm is Ownable {
     //Farmers Struct
     struct Farmer {
         bool exists;
-        uint256 nftBalance;
-        uint256 bondBeraCubs;
+        uint256 beraCubsBonded;
         uint256 claimsFuzz;
-        uint256 claimsBond;
         uint256 lastUpdate;
     }
 
@@ -85,7 +82,7 @@ contract BeraFarm is Ownable {
     constructor(
         address _beraContract, // address of Bera Cub NFT contract
         address _fuzz, //Address of the $FUZZ token to use in the platform
-        address _usdc, //Address of USDC stablecoin
+        address _honey, //Address of $Honey stablecoin
         address _pair, //Address of the liquidity pool
         address _treasury, //Address of a treasury wallet to hold fees and taxes
         uint256 _dailyInterest, //DailyInterest
@@ -96,7 +93,7 @@ contract BeraFarm is Ownable {
         fuzz = IFUZZTOKEN(_fuzz);
 
         fuzzBeraPair = IUniswapV2Pair(_pair);
-        usdc = IERC20(_usdc);
+        honey = IERC20(_honey);
         beraCubNftContract = IBERACUB(_beraContract);
         factory = IXDEXFactory(_factory);
 
@@ -203,7 +200,7 @@ contract BeraFarm is Ownable {
         uint256 fuzzOwned = fuzz.balanceOf(msg.sender);
 
         uint256 transactionTotal = beraCubCost.mul(_amount);
-        require(beraCubBalance < 100, "Max Bera Cubs Owned");
+        require(beraCubBalance < 8, "Max Bera Cubs Owned");
 
         require(fuzzOwned >= transactionTotal, "Not enough $FUZZ");
         beraCubNftContract.buyBeraCubs(msg.sender, _amount);
@@ -212,7 +209,7 @@ contract BeraFarm is Ownable {
         if (farmers[msg.sender].exists) {
             farmer = farmers[msg.sender];
         } else {
-            farmer = Farmer(true, 0, 0, 0, 0, 0);
+            farmer = Farmer(true, 0, 0, 0);
             farmersAddresses.push(msg.sender);
         }
 
@@ -221,8 +218,6 @@ contract BeraFarm is Ownable {
         farmers[msg.sender] = farmer;
         updateClaims(msg.sender, _amount);
 
-        totalBeraCubs += _amount;
-
         emit BoughtBeraCubs(msg.sender, _amount);
     }
 
@@ -230,57 +225,49 @@ contract BeraFarm is Ownable {
         require(isLive, "Platform is offline");
         require(
             block.timestamp >= bondBeraCubsStartTime,
-            "BondNode not available yet"
+            "Bond Bera Cub not available yet"
         );
 
         uint256 beraCubBalance = beraCubNftContract.balanceOf(msg.sender);
-        uint256 nodesOwned = beraCubBalance +
-            farmers[msg.sender].bondBeraCubs +
-            _amount;
-        require(nodesOwned < 101, "Max Bera Cubs  Owned");
+        uint256 beraCubsOwned = beraCubBalance + _amount;
+        require(beraCubsOwned < 8, "Max Bera Cubs  Owned");
         Farmer memory farmer;
         if (farmers[msg.sender].exists) {
             farmer = farmers[msg.sender];
         } else {
-            farmer = Farmer(true, 0, 0, 0, 0, 0);
+            farmer = Farmer(true, 0, 0, 0);
             farmersAddresses.push(msg.sender);
         }
-        uint256 usdcAmount = getBondCost();
-        uint256 transactionTotal = usdcAmount.mul(_amount);
+        uint256 honeyAmount = getBondCost();
+        uint256 transactionTotal = honeyAmount.mul(_amount);
 
-        uint256 usdcBalance = usdc.balanceOf(msg.sender);
+        uint256 honeyBalance = honey.balanceOf(msg.sender);
 
-        require(usdcBalance >= transactionTotal, "Not enough $HONEY");
-        _transferFrom(usdc, msg.sender, address(treasury), transactionTotal);
+        require(honeyBalance >= transactionTotal, "Not enough $HONEY");
+        _transferFrom(honey, msg.sender, address(treasury), transactionTotal);
 
-        // note to Clam nfts need to sit with the contract until the bond is complete resume with this
-        beraCubNftContract.buyBeraCubs(address(this), _amount);
+        beraCubNftContract.buyBeraCubs(msg.sender, _amount);
         farmers[msg.sender] = farmer;
         updateClaims(msg.sender, _amount);
-        farmers[msg.sender].bondBeraCubs += _amount;
-        totalBeraCubs += _amount;
+        farmers[msg.sender].beraCubsBonded += _amount;
 
         emit BeraCubsBonded(msg.sender, _amount);
     }
 
     function awardNode(address _address, uint256 _amount) public onlyOwner {
-        uint256 beraCubsOwned = beraCubNftContract.balanceOf(msg.sender);
-        uint256 nodesOwned = farmers[_address].eggsNodes +
-            farmers[_address].bondNodes +
-            _amount;
-        require(nodesOwned < 101, "Max Chickens Owned");
+        uint256 beraCubsBalance = beraCubNftContract.balanceOf(_address);
+        uint256 beraCubsOwned = beraCubsBalance + _amount;
+
+        require(beraCubsOwned < 8, "Max Bera Cubs Owned");
         Farmer memory farmer;
         if (farmers[_address].exists) {
             farmer = farmers[_address];
         } else {
-            farmer = Farmer(true, 0, 0, 0, 0, 0);
+            farmer = Farmer(true, 0, 0, 0);
             farmersAddresses.push(_address);
         }
         farmers[_address] = farmer;
-        updateClaims(_address);
-        farmers[_address].eggsNodes += _amount;
-
-        farmers[_address].lastUpdate = block.timestamp;
+        updateClaims(_address, _amount);
     }
 
     // function compoundNode() public {
@@ -322,73 +309,44 @@ contract BeraFarm is Ownable {
                 .mul((time.sub(timerFrom)))
                 .div(8640000);
 
-        if (farmers[_address].claimsBond > 0) {
-            farmers[_address].claimsBond += farmers[_address]
-                .bondBeraCubs
-                .mul(beraCubBase)
-                .mul(dailyInterest)
-                .mul((time.sub(timerFrom)))
-                .div(8640000);
-        }
-
         farmers[_address].lastUpdate = time;
     }
 
     function getTotalClaimable(address _user) public view returns (uint256) {
         uint256 time = block.timestamp;
-        uint256 pendingFuzz = farmers[_user]
-            .nftBalance
+        uint256 beraCubBalance = beraCubNftContract.balanceOf(_user);
+        uint256 pendingFuzz = beraCubBalance
             .mul(beraCubBase)
             .mul(dailyInterest)
             .mul((time.sub(farmers[_user].lastUpdate)))
             .div(8640000);
-        uint256 pendingBond = farmers[_user]
-            .bondBeraCubs
-            .mul(
-                beraCubBase.mul(
-                    dailyInterest.mul((time.sub(farmers[_user].lastUpdate)))
-                )
-            )
-            .div(8640000);
-        uint256 pending = pendingFuzz.add(pendingBond);
-        return
-            farmers[_user].claimsFuzz.add(farmers[_user].claimsBond).add(
-                pending
-            );
+
+        return farmers[_user].claimsFuzz.add(pendingFuzz);
     }
 
     function getTaxEstimate() external view returns (uint256) {
         uint256 time = block.timestamp;
-        uint256 pendingFuzz = farmers[msg.sender]
-            .nftBalance
+        uint256 beraCubBalance = beraCubNftContract.balanceOf(msg.sender);
+        uint256 pendingFuzz = beraCubBalance
             .mul(beraCubBase)
             .mul(dailyInterest)
             .mul((time.sub(farmers[msg.sender].lastUpdate)))
             .div(8640000);
-        uint256 pendingBond = farmers[msg.sender]
-            .bondBeraCubs
-            .mul(beraCubBase)
-            .mul(dailyInterest)
-            .mul((time.sub(farmers[msg.sender].lastUpdate)))
-            .div(8640000);
+
         uint256 claimableFuzz = pendingFuzz.add(farmers[msg.sender].claimsFuzz);
-        uint256 claimableBond = pendingBond.add(farmers[msg.sender].claimsBond);
-        uint256 taxEggs = claimableFuzz.div(100).mul(claimTaxFuzz);
-        uint256 taxBond = claimableBond.div(100).mul(claimTaxBond);
-        return taxEggs.add(taxBond);
+
+        uint256 taxFuzz = claimableFuzz.div(100).mul(claimTaxFuzz);
+
+        return taxFuzz;
     }
 
     function calculateTax() public returns (uint256) {
         updateClaims(msg.sender, 0);
-        uint256 taxEggs = farmers[msg.sender].claimsFuzz.div(100).mul(
+        uint256 taxFuzz = farmers[msg.sender].claimsFuzz.div(100).mul(
             claimTaxFuzz
         );
-        uint256 taxBond = farmers[msg.sender].claimsBond.div(100).mul(
-            claimTaxBond
-        );
-        uint256 tax = taxEggs.add(taxBond);
 
-        return tax;
+        return taxFuzz;
     }
 
     function claim() external {
@@ -397,22 +355,19 @@ contract BeraFarm is Ownable {
             "sender must be registered Bera Cub farmer to claim yields"
         );
 
-        uint256 nodesOwned = beraCubNftContract.balanceOf(msg.sender);
+        uint256 beraCubsOwned = beraCubNftContract.balanceOf(msg.sender);
         require(
-            nodesOwned > 0,
+            beraCubsOwned > 0,
             "sender must own at least one Bera Cub to claim yields"
         );
 
         uint256 tax = calculateTax();
-        uint256 reward = farmers[msg.sender].claimsFuzz.add(
-            farmers[msg.sender].claimsBond
-        );
+        uint256 reward = farmers[msg.sender].claimsFuzz;
         uint256 toBurn = tax;
         uint256 toFarmer = reward.sub(tax);
 
         if (reward > 0) {
             farmers[msg.sender].claimsFuzz = 0;
-            farmers[msg.sender].claimsBond = 0;
             fuzz.mint(msg.sender, toFarmer);
             fuzz.burn(msg.sender, toBurn);
         }
@@ -427,10 +382,8 @@ contract BeraFarm is Ownable {
     }
 
     function getOwnedBeraCubs(address user) external view returns (uint256) {
-        uint256 ownedNodes = farmers[user].nftBalance.add(
-            farmers[user].bondBeraCubs
-        );
-        return ownedNodes;
+        uint256 beraCubsOwned = beraCubNftContract.balanceOf(user);
+        return beraCubsOwned;
     }
 
     function getTotalNodes() external view returns (uint256) {
