@@ -200,7 +200,7 @@ contract BeraFarm is Ownable {
         uint256 fuzzOwned = fuzz.balanceOf(msg.sender);
 
         uint256 transactionTotal = beraCubCost.mul(_amount);
-        require(beraCubBalance < 8, "Max Bera Cubs Owned");
+        require(beraCubBalance < 20, "Max Bera Cubs Owned");
 
         require(fuzzOwned >= transactionTotal, "Not enough $FUZZ");
         beraCubNftContract.buyBeraCubs(msg.sender, _amount);
@@ -230,7 +230,7 @@ contract BeraFarm is Ownable {
 
         uint256 beraCubBalance = beraCubNftContract.balanceOf(msg.sender);
         uint256 beraCubsOwned = beraCubBalance + _amount;
-        require(beraCubsOwned < 8, "Max Bera Cubs  Owned");
+        require(beraCubsOwned < 20, "Max Bera Cubs  Owned");
         Farmer memory farmer;
         if (farmers[msg.sender].exists) {
             farmer = farmers[msg.sender];
@@ -258,7 +258,7 @@ contract BeraFarm is Ownable {
         uint256 beraCubsBalance = beraCubNftContract.balanceOf(_address);
         uint256 beraCubsOwned = beraCubsBalance + _amount;
 
-        require(beraCubsOwned < 8, "Max Bera Cubs Owned");
+        require(beraCubsOwned < 20, "Max Bera Cubs Owned");
         Farmer memory farmer;
         if (farmers[_address].exists) {
             farmer = farmers[_address];
@@ -270,27 +270,24 @@ contract BeraFarm is Ownable {
         updateClaims(_address, _amount);
     }
 
-    // function compoundNode() public {
-    //     uint256 pendingClaims = getTotalClaimable(msg.sender);
-    //     uint256 nodesOwned = farmers[msg.sender].eggsNodes +
-    //         farmers[msg.sender].bondNodes;
-    //     require(
-    //         pendingClaims > nodeCost,
-    //         "Not enough pending eggsEggs to compound"
-    //     );
-    //     require(nodesOwned < 100, "Max Chickens Owned");
-    //     updateClaims(msg.sender);
-    //     if (farmers[msg.sender].claimsEggs > nodeCost) {
-    //         farmers[msg.sender].claimsEggs -= nodeCost;
-    //         farmers[msg.sender].eggsNodes++;
-    //     } else {
-    //         uint256 difference = nodeCost - farmers[msg.sender].claimsEggs;
-    //         farmers[msg.sender].claimsEggs = 0;
-    //         farmers[msg.sender].claimsBond -= difference;
-    //         farmers[msg.sender].bondNodes++;
-    //     }
-    //     totalNodes++;
-    // }
+    function compoundNode() public {
+        uint256 pendingClaims = getTotalClaimable(msg.sender);
+        uint256 beraCubsOwned = beraCubNftContract.balanceOf(msg.sender);
+        require(
+            pendingClaims > beraCubCost,
+            "Not enough pending $FUZZ to compound"
+        );
+        require(beraCubsOwned < 20, "Max Chickens Owned");
+
+        require(
+            farmers[msg.sender].claimsFuzz > beraCubCost,
+            "Not enough $FUZZ to compound"
+        );
+        farmers[msg.sender].claimsFuzz -= beraCubCost;
+        beraCubNftContract.buyBeraCubs(msg.sender, 1);
+
+        updateClaims(msg.sender, 1);
+    }
 
     function updateClaims(
         address _address,
