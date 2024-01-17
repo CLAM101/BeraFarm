@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.19;
-
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -10,6 +10,7 @@ import "./FuzzToken.sol";
 import "./Interfaces/IFUZZTOKEN.sol";
 import "./Interfaces/IBERACUB.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+
 import "hardhat/console.sol";
 
 interface IUniswapV2Pair {
@@ -23,7 +24,7 @@ interface IXDEXFactory {
     ) external view returns (address pair);
 }
 
-contract BeraFarm is Ownable {
+contract BeraFarm is Ownable, ReentrancyGuard {
     //Emit payment events
 
     event IERC20TransferEvent(IERC20 indexed token, address to, uint256 amount);
@@ -78,23 +79,21 @@ contract BeraFarm is Ownable {
     //Mappings
     mapping(address => Farmer) private farmers;
 
-    //Constructor
     constructor(
-        address _beraContract, // address of Bera Cub NFT contract
-        address _fuzz, //Address of the $FUZZ token to use in the platform
-        address _honey, //Address of $Honey stablecoin
-        address _pair, //Address of the liquidity pool
-        address _treasury, //Address of a treasury wallet to hold fees and taxes
-        uint256 _dailyInterest, //DailyInterest
-        uint256 _nodeCost, //Cost of a node in $FUZZ
-        uint256 _bondDiscount, //% of discount of the bonding
-        address _factory // Joe factory contract address
+        address _beraCubNftContract, // address of Bera Cub NFT contract
+        address _fuzz, //$FUZZ token
+        address _honey, //$Honey stablecoin
+        address _pair, //Vera Fuzz pool
+        address _treasury, //Wallet to hold fees and taxes
+        uint256 _dailyInterest,
+        uint256 _beraCubCost, //Cost of a Bera Cub in $FUZZ
+        uint256 _bondDiscount, //As percentge
+        address _factory
     ) {
         fuzz = IFUZZTOKEN(_fuzz);
-
         fuzzBeraPair = IUniswapV2Pair(_pair);
         honey = IERC20(_honey);
-        beraCubNftContract = IBERACUB(_beraContract);
+        beraCubNftContract = IBERACUB(_beraCubNftContract);
         factory = IXDEXFactory(_factory);
 
         // these are testnet toke addresses adn would need to be replaced in the case of a mainnet deployment
@@ -107,19 +106,22 @@ contract BeraFarm is Ownable {
 
         treasury = _treasury;
         dailyInterest = _dailyInterest;
-        beraCubCost = _nodeCost.mul(1e18);
+        beraCubCost = _beraCubCost.mul(1e18);
         beraCubBase = SafeMath.mul(10, 1e18);
         bondDiscount = _bondDiscount;
     }
 
     //Price Checking Functions
     function getFuzzPrice() public view returns (uint256) {
-        (uint256 reserve0, uint256 reserve1, ) = fuzzBeraPair.getReserves();
+        (uint256 fuzzReserve, uint256 beraReserve, ) = fuzzBeraPair
+            .getReserves();
 
-        require(reserve0 > 0 && reserve1 > 0, "Reserves not available");
+        require(fuzzReserve > 0 && beraReserve > 0, "Reserves not available");
 
-        uint256 convertedBeraToHoney = beraPrice.mul(1e18) * reserve1;
-        uint256 price = convertedBeraToHoney / reserve0;
+        console.log("fuzzReserve", fuzzReserve, "beraReserve", beraReserve);
+
+        uint256 convertedBeraToHoney = beraPrice.mul(1e18) * beraReserve;
+        uint256 price = convertedBeraToHoney / fuzzReserve;
 
         return price;
     }
@@ -194,13 +196,15 @@ contract BeraFarm is Ownable {
      * @param _amount amount of Bera NFTs to mint and deposit
      * @dev Purchases and autostakes Bera NFTs for FuzzToken rewards.\
      */
-    function buyBeraCubs(uint256 _amount) external {
+    function buyBeraCubs(uint256 _amount) external nonReentrant {
         require(isLive, "Platform is offline");
         uint256 beraCubBalance = beraCubNftContract.balanceOf(msg.sender);
         uint256 fuzzOwned = fuzz.balanceOf(msg.sender);
 
         uint256 transactionTotal = beraCubCost.mul(_amount);
-        require(beraCubBalance < 20, "Max Bera Cubs Owned");
+
+        uint256 beraCubsOwned = beraCubBalance + _amount;
+        require(beraCubsOwned <= 20, "Max Bera Cubs Owned");
 
         require(fuzzOwned >= transactionTotal, "Not enough $FUZZ");
         beraCubNftContract.buyBeraCubs(msg.sender, _amount);
@@ -221,7 +225,7 @@ contract BeraFarm is Ownable {
         emit BoughtBeraCubs(msg.sender, _amount);
     }
 
-    function bondBeras(uint256 _amount) external payable {
+    function bondBeras(uint256 _amount) external payable nonReentrant {
         require(isLive, "Platform is offline");
         require(
             block.timestamp >= bondBeraCubsStartTime,

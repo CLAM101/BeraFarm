@@ -23,7 +23,6 @@ contract BeraCub is ERC721URIStorage {
         string memory tokenURI = formatTokenURI();
         require(tokenCounter + _amount <= maxSupply, "All Bera Cubs Minted :(");
         for (uint256 i = 0; i < _amount; i++) {
-            tokenCounter = tokenCounter + 1;
             _safeMint(_reciever, tokenCounter);
             _setTokenURI(tokenCounter, tokenURI);
             tokenCounter = tokenCounter + 1;

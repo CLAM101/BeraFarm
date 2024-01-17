@@ -1,6 +1,6 @@
 import "@nomicfoundation/hardhat-chai-matchers";
 import { ethers } from "hardhat";
-import { BeraCub, FuzzToken, BeraFarm, MockUsdc } from "../../typechain-types";
+import { BeraCub, FuzzToken, BeraFarm, MockHoney } from "../../typechain-types";
 import { Helpers } from "./helpers";
 import { wBeraABI } from "./ABI/wbera-abi";
 import { bexABI } from "./ABI/bex-abi";
@@ -10,7 +10,7 @@ export async function deployContracts() {
   let beraCub: BeraCub;
   let fuzzToken: FuzzToken;
   let beraFarm: BeraFarm;
-  let mockUSDC: MockUsdc;
+  let mockHoney: MockHoney;
   const helpers = new Helpers();
   const wBeraAddress = "0x5806E416dA447b267cEA759358cF22Cc41FAE80F";
   const routerAddress = "0xB6120De62561D702087142DE405EEB02c18873Bc";
@@ -29,9 +29,9 @@ export async function deployContracts() {
   const BeraCub = await ethers.getContractFactory("BeraCub");
   const BeraFarm = await ethers.getContractFactory("BeraFarm");
   const FuzzToken = await ethers.getContractFactory("FuzzToken");
-  const MockUSDC = await ethers.getContractFactory("MockUsdc");
+  const MockHoney = await ethers.getContractFactory("MockHoney");
 
-  beraCub = (await BeraCub.deploy({
+  beraCub = (await BeraCub.deploy(3000, {
     gasLimit: 30000000,
   })) as unknown as BeraCub;
 
@@ -81,17 +81,17 @@ export async function deployContracts() {
 
   console.log("LP Balance:", LPBalance.toString());
 
-  mockUSDC = (await MockUSDC.deploy(
+  mockHoney = (await MockHoney.deploy(
     ethers.parseEther("1000000")
-  )) as unknown as MockUsdc;
-  await mockUSDC.waitForDeployment();
+  )) as unknown as MockHoney;
+  await mockHoney.waitForDeployment();
 
-  console.log("Token Deployed At:", mockUSDC.target);
+  console.log("Token Deployed At:", mockHoney.target);
 
   beraFarm = (await BeraFarm.deploy(
     beraCub.target,
     fuzzToken.target,
-    mockUSDC.target,
+    mockHoney.target,
     pair,
     otherAccount.address,
     60,
@@ -120,6 +120,6 @@ export async function deployContracts() {
     fourthAccount,
     fifthAccount,
     sixthAccount,
-    mockUSDC,
+    mockHoney,
   };
 }

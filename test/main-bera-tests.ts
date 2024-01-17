@@ -5,13 +5,13 @@ import { ethers } from "hardhat";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { BlockTag, Log } from "@ethersproject/abstract-provider";
 import { deployContracts } from "./testHelpers/deploy-contracts";
-import { BeraCub, BeraFarm, FuzzToken, MockUsdc } from "../typechain-types";
+import { BeraCub, BeraFarm, FuzzToken, MockHoney } from "../typechain-types";
 
 describe("Bera Farm Tests", async function () {
   let beraCub: BeraCub,
     beraFarm: BeraFarm,
     fuzzToken: FuzzToken,
-    mockUSDC: MockUsdc,
+    mockHoney: MockHoney,
     owner: HardhatEthersSigner,
     otherAccount: HardhatEthersSigner,
     thirdAccount: HardhatEthersSigner,
@@ -22,7 +22,7 @@ describe("Bera Farm Tests", async function () {
   before(async function () {
     const fixture = await loadFixture(deployContracts);
     owner = fixture.owner;
-    mockUSDC = fixture.mockUSDC;
+    mockHoney = fixture.mockHoney;
     otherAccount = fixture.otherAccount;
     thirdAccount = fixture.thirdAccount;
     fourthAccount = fixture.fourthAccount;
@@ -124,7 +124,7 @@ describe("Bera Farm Tests", async function () {
       const expectedTotalCost = ethers.parseEther("3.4");
 
       await expect(
-        mockUSDC.connect(owner).approve(beraFarm.target, expectedTotalCost)
+        mockHoney.connect(owner).approve(beraFarm.target, expectedTotalCost)
       ).to.not.be.reverted;
 
       const amountOfBeraCubsToBond = "2";
