@@ -31,13 +31,14 @@ describe("Bera Farm Tests", async function () {
     beraCub = fixture.beraCub;
     fuzzToken = fixture.fuzzToken;
     beraFarm = fixture.beraFarm;
+
+    // open platform for testing
+    await beraFarm.connect(owner).openBuyBeraCubs();
+    await beraFarm.connect(owner).setPlatformState(true);
+    await beraFarm.connect(owner).openBonding();
   });
 
   describe("Bera Farm Tests", async function () {
-    it("Allows owner to set platform state to live", async function () {
-      await expect(beraFarm.connect(owner).setPlatformState(true)).to.not.be
-        .reverted;
-    });
     it("Allows the purchase of two Bera Cubs for 20 fuzzToken", async function () {
       await expect(
         fuzzToken
@@ -132,7 +133,7 @@ describe("Bera Farm Tests", async function () {
 
       const bondBeraCubTx = await beraFarm
         .connect(owner)
-        .bondBeras(amountOfBeraCubsToBond);
+        .bondBeraCubs(amountOfBeraCubsToBond);
 
       const finalizedTx = await bondBeraCubTx.wait(1);
 

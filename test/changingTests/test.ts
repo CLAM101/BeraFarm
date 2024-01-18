@@ -4,16 +4,16 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 
-import { BeraCub, BeraFarm, FuzzToken, MockUsdc } from "../typechain-types";
-import { oracleABI } from "./testHelpers/ABI/oracle-abi";
-import { ERC20DexABI } from "./testHelpers/ABI/ERC20dex-abi";
-import { ERC20ABI } from "./testHelpers/ABI/ERC20-abi";
+import { BeraCub, BeraFarm, FuzzToken, MockHoney } from "../../typechain-types";
+import { oracleABI } from "../testHelpers/ABI/oracle-abi";
+import { ERC20DexABI } from "../testHelpers/ABI/ERC20dex-abi";
+import { ERC20ABI } from "../testHelpers/ABI/ERC20-abi";
 
 describe("Bera Farm Tests", async function () {
   let beraCub: BeraCub,
     beraFarm: BeraFarm,
     fuzzToken: FuzzToken,
-    mockUSDC: MockUsdc,
+    mockUSDC: MockHoney,
     otherAccount: HardhatEthersSigner,
     thirdAccount: HardhatEthersSigner,
     fourthAccount: HardhatEthersSigner,

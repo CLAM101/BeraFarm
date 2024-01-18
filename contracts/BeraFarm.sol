@@ -61,9 +61,10 @@ contract BeraFarm is Ownable, ReentrancyGuard {
 
     uint256 public claimTaxFuzz = 8;
     uint256 public claimTaxBond = 12;
-    uint256 public bondBeraCubsStartTime;
 
     bool public isLive = false;
+    bool public bondingOpen = false;
+    bool public buyBeraCubsOpen = false;
 
     //Array
     address[] public farmersAddresses;
@@ -183,10 +184,20 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         }
     }
 
-    function setBondBeraCubsStartTime(
-        uint256 _newStartTime
-    ) external onlyOwner {
-        bondBeraCubsStartTime = _newStartTime;
+    function openBonding() external onlyOwner {
+        bondingOpen = true;
+    }
+
+    function closeBonding() external onlyOwner {
+        bondingOpen = false;
+    }
+
+    function openBuyBeraCubs() external onlyOwner {
+        buyBeraCubsOpen = true;
+    }
+
+    function closeBuyBeraCubs() external onlyOwner {
+        buyBeraCubsOpen = false;
     }
 
     //Node management - Buy - Claim - Bond - User front end
@@ -198,6 +209,7 @@ contract BeraFarm is Ownable, ReentrancyGuard {
      */
     function buyBeraCubs(uint256 _amount) external nonReentrant {
         require(isLive, "Platform is offline");
+        require(buyBeraCubsOpen, "Buy Bera Cubs is closed");
         uint256 beraCubBalance = beraCubNftContract.balanceOf(msg.sender);
         uint256 fuzzOwned = fuzz.balanceOf(msg.sender);
 
@@ -225,16 +237,20 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         emit BoughtBeraCubs(msg.sender, _amount);
     }
 
-    function bondBeras(uint256 _amount) external payable nonReentrant {
+    function bondBeraCubs(uint256 _amount) external payable nonReentrant {
         require(isLive, "Platform is offline");
-        require(
-            block.timestamp >= bondBeraCubsStartTime,
-            "Bond Bera Cub not available yet"
-        );
-
+        require(bondingOpen, "Bonding is closed");
         uint256 beraCubBalance = beraCubNftContract.balanceOf(msg.sender);
         uint256 beraCubsOwned = beraCubBalance + _amount;
         require(beraCubsOwned < 20, "Max Bera Cubs  Owned");
+
+        uint256 honeyAmount = getBondCost();
+        uint256 transactionTotal = honeyAmount.mul(_amount);
+
+        uint256 honeyBalance = honey.balanceOf(msg.sender);
+
+        require(honeyBalance >= transactionTotal, "Not enough $HONEY");
+
         Farmer memory farmer;
         if (farmers[msg.sender].exists) {
             farmer = farmers[msg.sender];
@@ -242,12 +258,6 @@ contract BeraFarm is Ownable, ReentrancyGuard {
             farmer = Farmer(true, 0, 0, 0);
             farmersAddresses.push(msg.sender);
         }
-        uint256 honeyAmount = getBondCost();
-        uint256 transactionTotal = honeyAmount.mul(_amount);
-
-        uint256 honeyBalance = honey.balanceOf(msg.sender);
-
-        require(honeyBalance >= transactionTotal, "Not enough $HONEY");
         _transferFrom(honey, msg.sender, address(treasury), transactionTotal);
 
         beraCubNftContract.buyBeraCubs(msg.sender, _amount);
