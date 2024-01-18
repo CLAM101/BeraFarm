@@ -3,7 +3,6 @@ import "@nomicfoundation/hardhat-chai-matchers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
-import { BlockTag, Log } from "@ethersproject/abstract-provider";
 import { deployContracts } from "./testHelpers/deploy-contracts";
 import { BeraCub, BeraFarm, FuzzToken, MockHoney } from "../typechain-types";
 
@@ -93,6 +92,14 @@ describe("Bera Farm Blocker Tests", async function () {
         beraFarm.connect(otherAccount).buyBeraCubs(1)
       ).to.be.revertedWith("Max Bera Cubs Owned");
     });
+
+    it("Allows owner to close Bera Cub purchase and prevents user from minting after purchase is closed", async function () {
+      await expect(beraFarm.connect(owner).closeBuyBeraCubs()).to.not.be
+        .reverted;
+      await expect(
+        beraFarm.connect(otherAccount).buyBeraCubs(1)
+      ).to.be.revertedWith("Buy Bera Cubs is closed");
+    });
   });
 
   describe("Bond Bera Cubs Blocker Tests", async function () {
@@ -127,8 +134,12 @@ describe("Bera Farm Blocker Tests", async function () {
           .approve(beraFarm.target, ethers.parseEther("2000"))
       ).to.not.be.reverted;
       await expect(beraFarm.bondBeraCubs(22)).to.be.revertedWith(
-        "Bond Bera Cub not available yet"
+        "Bonding is closed"
       );
+    });
+
+    it("Allows owner to open bonding", async function () {
+      await expect(beraFarm.connect(owner).openBonding()).to.not.be.reverted;
     });
 
     it("Blocks User from Bonding more Bera Cubs than the limit", async function () {
@@ -145,28 +156,33 @@ describe("Bera Farm Blocker Tests", async function () {
     it("Blocks bonding of Bera Cub when user does not have enough $Honey", async function () {
       await expect(
         beraFarm.connect(otherAccount).bondBeraCubs(5)
-      ).to.be.revertedWith("Not enough $Honey");
+      ).to.be.revertedWith("Not enough $HONEY");
     });
 
     it("Blocks User from Bonding more Bera Cubs after having minted/bonded the limit", async function () {
-      await expect(fuzzToken.connect(owner).enable_trading()).to.not.be
-        .reverted;
       await expect(
-        fuzzToken
+        mockHoney
           .connect(owner)
-          .transfer(otherAccount.address, ethers.parseEther("2000"))
+          .approve(beraFarm.target, ethers.parseEther("200"))
       ).to.not.be.reverted;
 
-      await expect(
-        fuzzToken
-          .connect(otherAccount)
-          .approve(beraFarm.target, ethers.parseEther("2000"))
-      ).to.not.be.reverted;
-      await expect(beraFarm.connect(otherAccount).bondBeraCubs(20)).to.not.be
-        .reverted;
+      await expect(beraFarm.connect(owner).bondBeraCubs(20)).to.not.be.reverted;
 
+      await expect(beraFarm.connect(owner).bondBeraCubs(1)).to.be.revertedWith(
+        "Max Bera Cubs Owned"
+      );
+    });
+
+    it("Allows owner to close Bonding and prevents user from minting after bonding is closed", async function () {
+      await expect(beraFarm.connect(owner).closeBonding()).to.not.be.reverted;
       await expect(
         beraFarm.connect(otherAccount).bondBeraCubs(1)
+      ).to.be.revertedWith("Bonding is closed");
+    });
+
+    it("Blocks owner from awarding more than the allowed amount of Bera Cubs to a wallet", async function () {
+      await expect(
+        beraFarm.connect(owner).awardBeraCubs(otherAccount.address, 21)
       ).to.be.revertedWith("Max Bera Cubs Owned");
     });
   });

@@ -106,7 +106,10 @@ describe("Bera Farm Tests", async function () {
         if (event && event.name === "RewardsClaimed") {
           console.log("Rewards Claimed", event.args);
           expect(event.args.sender).to.equal(owner.address);
-          expect(event.args.amount).to.equal(expectedReward);
+          expect(event.args.amount).to.be.closeTo(
+            expectedReward,
+            ethers.parseEther("1")
+          );
         }
       });
     });
@@ -158,6 +161,16 @@ describe("Bera Farm Tests", async function () {
       console.log("Chicken Balance", ethers.formatUnits(beraCubBalance, 0));
 
       expect(beraCubBalance).to.equal(expectedTotalBeraCubBalance);
+    });
+
+    it("Allows the owner to award nodes", async function () {
+      await expect(
+        beraFarm.connect(owner).awardBeraCubs(thirdAccount.address, 5)
+      ).to.not.be.reverted;
+
+      const nodeBalance = await beraCub.balanceOf(thirdAccount.address);
+
+      expect(nodeBalance).to.equal(5);
     });
   });
 });

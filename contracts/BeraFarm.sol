@@ -34,9 +34,11 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         address to,
         uint256 amount
     );
-    event BoughtBeraCubs(address sender, uint256 amount);
-    event RewardsClaimed(address sender, uint256 amount);
-    event BeraCubsBonded(address sender, uint256 amount);
+    event BoughtBeraCubs(address sender, uint256 amountOfCubs);
+    event RewardsClaimed(address sender, uint256 amountOfFuzz);
+    event BeraCubsBonded(address sender, uint256 amountOfCubs);
+    event BeraCubCompounded(address sender, uint256 amountOfCubs);
+    event BeraCubsAwarded(address sender, uint256 amountOfCubs);
 
     //SafeMathuse
     using SafeMath for uint256;
@@ -242,7 +244,7 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         require(bondingOpen, "Bonding is closed");
         uint256 beraCubBalance = beraCubNftContract.balanceOf(msg.sender);
         uint256 beraCubsOwned = beraCubBalance + _amount;
-        require(beraCubsOwned < 20, "Max Bera Cubs  Owned");
+        require(beraCubsOwned <= 20, "Max Bera Cubs Owned");
 
         uint256 honeyAmount = getBondCost();
         uint256 transactionTotal = honeyAmount.mul(_amount);
@@ -268,11 +270,11 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         emit BeraCubsBonded(msg.sender, _amount);
     }
 
-    function awardNode(address _address, uint256 _amount) public onlyOwner {
+    function awardBeraCubs(address _address, uint256 _amount) public onlyOwner {
         uint256 beraCubsBalance = beraCubNftContract.balanceOf(_address);
         uint256 beraCubsOwned = beraCubsBalance + _amount;
 
-        require(beraCubsOwned < 20, "Max Bera Cubs Owned");
+        require(beraCubsOwned <= 20, "Max Bera Cubs Owned");
         Farmer memory farmer;
         if (farmers[_address].exists) {
             farmer = farmers[_address];
@@ -284,14 +286,14 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         updateClaims(_address, _amount);
     }
 
-    function compoundNode() public {
+    function compoundBeraCub() public {
         uint256 pendingClaims = getTotalClaimable(msg.sender);
         uint256 beraCubsOwned = beraCubNftContract.balanceOf(msg.sender);
         require(
             pendingClaims > beraCubCost,
             "Not enough pending $FUZZ to compound"
         );
-        require(beraCubsOwned < 20, "Max Chickens Owned");
+        require(beraCubsOwned <= 20, "Max Chickens Owned");
 
         require(
             farmers[msg.sender].claimsFuzz > beraCubCost,
