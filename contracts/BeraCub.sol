@@ -21,7 +21,9 @@ contract BeraCub is ERC721URIStorage {
 
     function buyBeraCubs(address _reciever, uint256 _amount) public {
         string memory tokenURI = formatTokenURI();
-        require(tokenCounter + _amount <= maxSupply, "All Bera Cubs Minted :(");
+
+        uint256 newTotalSupply = tokenCounter + _amount;
+        require(newTotalSupply < maxSupply, "All Bera Cubs Minted :(");
         for (uint256 i = 0; i < _amount; i++) {
             _safeMint(_reciever, tokenCounter);
             _setTokenURI(tokenCounter, tokenURI);

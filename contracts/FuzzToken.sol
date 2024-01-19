@@ -40,7 +40,8 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
     using SafeERC20 for ERC20;
 
     mapping(address => bool) private isController;
-
+    event ControllerRemoved(address controllerRemoved);
+    event ControllerAdded(address newController);
     bool public tradingEnabled = false;
     address public treasuryAddress;
     uint256 public maxTransactionPercent = 1;
@@ -100,14 +101,10 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
         maxTransactionAmount = type(uint256).max;
     }
 
-    event ControllerAdded(address newController);
-
     function addController(address toAdd_) external onlyOwner {
         isController[toAdd_] = true;
         emit ControllerAdded(toAdd_);
     }
-
-    event ControllerRemoved(address controllerRemoved);
 
     function removeController(address toRemove_) external onlyOwner {
         isController[toRemove_] = false;

@@ -65,7 +65,7 @@ describe("Bera Farm Tests", async function () {
         if (event && event.name === "BoughtBeraCubs") {
           console.log("Bought Bera Cub event args", event.args);
           expect(event.args.sender).to.equal(owner.address);
-          expect(event.args.amount).to.equal(amountOfBeraCubs);
+          expect(event.args.amountOfCubs).to.equal(amountOfBeraCubs);
         }
       });
 
@@ -106,7 +106,7 @@ describe("Bera Farm Tests", async function () {
         if (event && event.name === "RewardsClaimed") {
           console.log("Rewards Claimed", event.args);
           expect(event.args.sender).to.equal(owner.address);
-          expect(event.args.amount).to.be.closeTo(
+          expect(event.args.amountOfFuzz).to.be.closeTo(
             expectedReward,
             ethers.parseEther("1")
           );
@@ -152,7 +152,7 @@ describe("Bera Farm Tests", async function () {
         if (event && event.name === "BeraCubsBonded") {
           console.log("BeraCubsBonded args", event.args);
           expect(event.args.sender).to.equal(owner.address);
-          expect(event.args.amount).to.equal(amountOfBeraCubsToBond);
+          expect(event.args.amountOfCubs).to.equal(amountOfBeraCubsToBond);
         }
       });
 
@@ -163,14 +163,84 @@ describe("Bera Farm Tests", async function () {
       expect(beraCubBalance).to.equal(expectedTotalBeraCubBalance);
     });
 
-    it("Allows the owner to award nodes", async function () {
-      await expect(
-        beraFarm.connect(owner).awardBeraCubs(thirdAccount.address, 5)
-      ).to.not.be.reverted;
+    it("Allows the owner to award bera Cubs", async function () {
+      const awardBeraCubTx = await beraFarm
+        .connect(owner)
+        .awardBeraCubs(thirdAccount.address, 5);
+
+      const finalizedTx = await awardBeraCubTx.wait(1);
 
       const nodeBalance = await beraCub.balanceOf(thirdAccount.address);
 
       expect(nodeBalance).to.equal(5);
+
+      let logs: Log[] = [];
+
+      if (finalizedTx) {
+        logs = finalizedTx.logs as unknown as Log[];
+      }
+
+      logs.forEach((log: Log) => {
+        const event = beraFarm.interface.parseLog(log);
+
+        if (event && event.name === "BeraCubsAwarded") {
+          console.log("Bera Cubs Compounded args", event.args);
+          expect(event.args.sender).to.equal(thirdAccount.address);
+          expect(event.args.amountOfCubs).to.equal(5);
+        }
+      });
+    });
+
+    it("Should Allow a user to Compound Bera Cubs", async function () {
+      await expect(
+        beraFarm.connect(owner).awardBeraCubs(fourthAccount.address, 1)
+      ).to.not.be.reverted;
+
+      const stakingDuration = 48 * 3600;
+
+      await ethers.provider.send("evm_increaseTime", [stakingDuration]);
+      await ethers.provider.send("evm_mine");
+
+      const expectedReward = ethers.parseEther("6");
+
+      const totalClaimableRewards = await beraFarm.getTotalClaimable(
+        fourthAccount.address
+      );
+
+      console.log(
+        "Total Claimable Rewards in compound test",
+        totalClaimableRewards
+      );
+
+      const compoundableBeraCubs = await beraFarm
+        .connect(fourthAccount)
+        .getAmountOfCoupoundableBeraCubs();
+
+      console.log("Compoundable Bera Cubs", compoundableBeraCubs);
+
+      expect(compoundableBeraCubs).to.equal(1);
+
+      const compoundTx = await beraFarm
+        .connect(fourthAccount)
+        .compoundBeraCubs(ethers.formatUnits(compoundableBeraCubs, 0));
+
+      const finalizedTx = await compoundTx.wait(1);
+
+      let logs: Log[] = [];
+
+      if (finalizedTx) {
+        logs = finalizedTx.logs as unknown as Log[];
+      }
+
+      logs.forEach((log: Log) => {
+        const event = beraFarm.interface.parseLog(log);
+
+        if (event && event.name === "BeraCubCompounded") {
+          console.log("Bera Cubs Compounded args", event.args);
+          expect(event.args.sender).to.equal(fourthAccount.address);
+          expect(event.args.amountOfCubs).to.equal(1);
+        }
+      });
     });
   });
 });

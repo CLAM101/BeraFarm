@@ -185,5 +185,32 @@ describe("Bera Farm Blocker Tests", async function () {
         beraFarm.connect(owner).awardBeraCubs(otherAccount.address, 21)
       ).to.be.revertedWith("Max Bera Cubs Owned");
     });
+
+    it("Blocks Owner from awarding more Bera Cubs added to the existing balance of the user exceeding the overall limit", async function () {
+      await expect(
+        beraFarm.connect(owner).awardBeraCubs(otherAccount.address, 20)
+      ).to.not.be.reverted;
+
+      await expect(
+        beraFarm.connect(owner).awardBeraCubs(otherAccount.address, 1)
+      ).to.be.revertedWith("Max Bera Cubs Owned");
+    });
+
+    it("BLocks the user from compounding a Bera Cub when the user doesn't have enough accumulated $Fuzz", async function () {
+      await expect(
+        beraFarm.connect(otherAccount).compoundBeraCubs(1)
+      ).to.be.revertedWith("Not enough pending $FUZZ to compound");
+    });
+
+    it("BLocks the user from compounding a Bera Cub when they already have the bax Bera Cub limit", async function () {
+      const stakingDuration = 48 * 3600;
+
+      await ethers.provider.send("evm_increaseTime", [stakingDuration]);
+      await ethers.provider.send("evm_mine");
+
+      await expect(
+        beraFarm.connect(otherAccount).compoundBeraCubs(1)
+      ).to.be.revertedWith("Max Bera Cubs Owned");
+    });
   });
 });
