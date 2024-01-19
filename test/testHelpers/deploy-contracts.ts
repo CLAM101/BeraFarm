@@ -54,7 +54,11 @@ export async function deployContracts() {
 
   console.log("Token Deployed At:", fuzzToken.target);
 
-  const wrapperContract = new ethers.Contract(wBeraAddress, wBeraABI, owner);
+  const wrapperContract = new ethers.Contract(
+    wBeraAddress,
+    wBeraABI,
+    owner
+  ) as any;
 
   await wrapperContract
     .connect(owner)

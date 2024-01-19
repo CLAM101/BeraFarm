@@ -9,7 +9,11 @@ export class Helpers {
     signer: HardhatEthersSigner,
     abi: any
   ) {
-    const wrapperContract = new ethers.Contract(tokenAddress, abi, signer);
+    const wrapperContract = new ethers.Contract(
+      tokenAddress,
+      abi,
+      signer
+    ) as any;
 
     const tx = await wrapperContract
       .connect(signer)
@@ -47,6 +51,6 @@ export class Helpers {
       deadline
     );
 
-    const addLiquidConfirmation = addLiquidTx.wait();
+    addLiquidTx.wait();
   }
 }
