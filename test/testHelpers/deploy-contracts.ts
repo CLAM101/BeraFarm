@@ -107,6 +107,8 @@ export async function deployContracts() {
 
   await fuzzToken.connect(owner).addController(beraFarm.target);
 
+  await beraCub.connect(owner).addController(beraFarm.target);
+
   console.log("Bera Farm Deployed:", beraFarm.target);
 
   return {

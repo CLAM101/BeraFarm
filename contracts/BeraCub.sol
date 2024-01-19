@@ -2,24 +2,31 @@
 pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "base64-sol/base64.sol";
 import "hardhat/console.sol";
 
-contract BeraCub is ERC721URIStorage {
+contract BeraCub is Ownable, ERC721URIStorage {
     uint256 public tokenCounter;
     uint256 public maxSupply;
     bool public mintingOpen;
+    mapping(address => bool) private isController;
 
     event MintedBeraCub(address sender, uint256 tokenId);
     event MintingOpened(bool mintingOpen);
     event MintingPaused(bool mintingOpen);
+    event ControllerRemoved(address controllerRemoved);
+    event ControllerAdded(address newController);
 
     constructor(uint256 _maxSupply) ERC721("Bera Cub", "CUB") {
         tokenCounter = 0;
         maxSupply = _maxSupply;
     }
 
-    function buyBeraCubs(address _reciever, uint256 _amount) public {
+    function buyBeraCubs(
+        address _reciever,
+        uint256 _amount
+    ) public onlyController {
         string memory tokenURI = formatTokenURI();
 
         uint256 newTotalSupply = tokenCounter + _amount;
@@ -33,6 +40,11 @@ contract BeraCub is ERC721URIStorage {
         }
     }
 
+    modifier onlyController() {
+        require(isController[_msgSender()], "CallerNotController");
+        _;
+    }
+
     function totalSupply() public view returns (uint256) {
         return tokenCounter;
     }
@@ -40,6 +52,16 @@ contract BeraCub is ERC721URIStorage {
     function openMinting() public {
         mintingOpen = true;
         emit MintingOpened(mintingOpen);
+    }
+
+    function addController(address toAdd_) external onlyOwner {
+        isController[toAdd_] = true;
+        emit ControllerAdded(toAdd_);
+    }
+
+    function removeController(address toRemove_) external onlyOwner {
+        isController[toRemove_] = false;
+        emit ControllerRemoved(toRemove_);
     }
 
     function pauseMinting() public {

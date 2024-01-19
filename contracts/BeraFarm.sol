@@ -407,8 +407,6 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         claimTaxBond = _claimTaxBond;
     }
 
-    //Platform Settings
-
     function setPlatformState(bool _isLive) public onlyOwner {
         isLive = _isLive;
     }
