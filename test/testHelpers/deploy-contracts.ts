@@ -98,7 +98,7 @@ export async function deployContracts() {
     mockHoney.target,
     pair,
     otherAccount.address,
-    60,
+    6,
     10,
     15,
     factoryAddress,
