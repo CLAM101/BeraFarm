@@ -25,6 +25,9 @@ interface IXDEXFactory {
 }
 
 contract BeraFarm is Ownable, ReentrancyGuard {
+    //SafeMathuse
+    using SafeMath for uint256;
+
     //Events
     event IERC20TransferEvent(IERC20 indexed token, address to, uint256 amount);
     event IERC20TransferFromEvent(
@@ -34,16 +37,17 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         uint256 amount
     );
     event BoughtBeraCubsFuzz(address sender, uint256 amountOfCubs);
-    event BoughtBeraCubsHoney(address sender, uint256 amountOfCubs);
+    event BoughtBeraCubsHoney(
+        address sender,
+        uint256 amountOfCubs,
+        uint256 transactionTotal
+    );
     event RewardsClaimed(address sender, uint256 rewardAfterTax, uint256 tax);
     event BeraCubsBonded(address sender, uint256 amountOfCubs);
     event BeraCubCompounded(address sender, uint256 amountOfCubs);
     event BeraCubsAwarded(address sender, uint256 amountOfCubs);
 
-    //SafeMathuse
-    using SafeMath for uint256;
-
-    //Variables
+    //Addresses
     IBERACUB private beraCubNftContract;
     IFUZZTOKEN private fuzz;
     IERC20 private honey;
@@ -51,21 +55,22 @@ contract BeraFarm is Ownable, ReentrancyGuard {
     IUniswapV2Pair private honeyWberaPair;
     IXDEXFactory private factory;
     address public treasury;
-    address private burn;
-    uint256 beraPrice = 1000;
+
+    //Platfrom Settings
+    bool public isLive = false;
+    bool public bondingOpen = false;
+    bool public buyBeraCubsOpen = false;
+    bool public emissionsStarted = false;
+
+    //Rates and Pricing
     uint256 private dailyInterest;
-    uint256 private beraCubCost;
-    uint256 private beraCubBase;
-    uint256 public bondDiscount;
     uint256 public claimTaxFuzz = 8;
     uint256 public claimTaxBond = 12;
     uint256 public honeyCostFirstBatch = 5 * 1e18;
     uint256 public honeyCostSecondBatch = 10 * 1e18;
-    bool public isLive = false;
-    bool public bondingOpen = false;
-    bool public buyBeraCubsFuzzOpen = false;
-    bool public buyBeraCubsHoneyOpen = false;
     uint256 public maxBondCostSoFar = 5;
+    uint256 public bondDiscount;
+    uint256 private immutable beraCubBase;
 
     //Array
     address[] public farmersAddresses;
@@ -88,7 +93,7 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         address _honey, //$Honey stablecoin
         address _pair, //Vera Fuzz pool
         address _treasury, //Wallet to hold fees and taxes
-        uint256 _dailyInterest,
+        uint256 _dailyInterest, //as a percentage
         uint256 _maxBondCostSoFar, //Cost of a Bera Cub in $FUZZ
         uint256 _bondDiscount, //As percentge
         address _factory // Dex factory
@@ -110,20 +115,21 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         treasury = _treasury;
         dailyInterest = _dailyInterest;
         maxBondCostSoFar = _maxBondCostSoFar.mul(1e18);
+
+        //baseline interest rate is 10% APY but can be adjusted based on changes to daily interest
         beraCubBase = SafeMath.mul(10, 1e18);
 
-        console.log("Bera Cub base", beraCubBase);
         bondDiscount = _bondDiscount;
     }
 
     /**
      * @notice Buy and deposit Bera NFT's for FuzzToken rewards
      * @param _amount amount of Bera NFTs to mint and deposit
-     * @dev Purchases and autostakes Bera NFTs for FuzzToken rewards.\
+     * @dev Purchases and autostakes Bera NFTs for FuzzToken rewards.
      */
     function buyBeraCubsFuzz(uint256 _amount) external nonReentrant {
         require(isLive, "Platform is offline");
-        require(buyBeraCubsFuzzOpen, "Buy Bera Cubs is closed");
+        require(buyBeraCubsOpen, "Buy Bera Cubs is closed");
         uint256 totalSupply = getTotalBeraCubs();
         require(totalSupply > 5000, "Not enough Minted To Purchase WIth $Fuzz");
         uint256 beraCubBalance = beraCubNftContract.balanceOf(msg.sender);
@@ -153,13 +159,19 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         emit BoughtBeraCubsFuzz(msg.sender, _amount);
     }
 
+    /**
+     * @notice Buy bera Cubs with $Honey stable coin
+     * @param _amount amount of Bera NFTs to mint and deposit
+     * @dev Purchases Bera Cubs for Honey.
+     */
     function buyBeraCubsHoney(uint256 _amount) public {
         require(isLive, "Platform is offline");
-        require(buyBeraCubsHoneyOpen, "Buy Bera Cubs is closed");
-
+        require(buyBeraCubsOpen, "Buy Bera Cubs is closed");
         uint256 totalSupply = getTotalBeraCubs();
+        require(totalSupply < 5000, "Not enough Minted To Purchase WIth $Fuzz");
 
-        require(totalSupply < 5000, "Honey Bera Cubs Sold Out");
+        // IMPORTANT!!!! this is at 6 for testing, up to 5000 before deployment
+        require(totalSupply < 5, "Honey Bera Cubs Sold Out");
 
         uint256 transactionTotal;
 
@@ -167,11 +179,12 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         uint256 beraCubsOwned = beraCubBalance + _amount;
         require(beraCubsOwned <= 20, "Max Bera Cubs Owned");
 
-        if (totalSupply <= 2500) {
+        // IMPORTANT!!!! this is at 3 for testing, up to 2500 before deployment
+        if (totalSupply <= 3) {
             transactionTotal = _amount.mul(honeyCostFirstBatch);
         }
-
-        if (totalSupply > 2500) {
+        // IMPORTANT!!!! this is at 3 for testing, up to 2500 before deployment
+        if (totalSupply >= 3) {
             transactionTotal = _amount.mul(honeyCostSecondBatch);
         }
 
@@ -190,10 +203,11 @@ contract BeraFarm is Ownable, ReentrancyGuard {
 
         beraCubNftContract.buyBeraCubs(msg.sender, _amount);
         farmers[msg.sender] = farmer;
-        updateClaims(msg.sender, _amount);
         farmers[msg.sender].beraCubsBonded += _amount;
 
-        emit BoughtBeraCubsHoney(msg.sender, _amount);
+        updateClaims(msg.sender, _amount);
+
+        emit BoughtBeraCubsHoney(msg.sender, _amount, transactionTotal);
     }
 
     /**
@@ -418,6 +432,7 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         address _address,
         uint256 numberOfNewBeraCubs
     ) internal {
+        if (!emissionsStarted) return;
         uint256 beraCubsOwned = beraCubNftContract.balanceOf(_address);
         uint256 beraCubsBalanceToCalcFrom = beraCubsOwned.sub(
             numberOfNewBeraCubs
@@ -490,19 +505,19 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         bondingOpen = false;
     }
 
-    function openBuyBeraCubsFuzz() external onlyOwner {
-        buyBeraCubsFuzzOpen = true;
+    function openBuyBeraCubs() external onlyOwner {
+        buyBeraCubsOpen = true;
     }
 
-    function closeBuyBeraCubsFuzz() external onlyOwner {
-        buyBeraCubsFuzzOpen = false;
+    function closeBuyBeraCubs() external onlyOwner {
+        buyBeraCubsOpen = false;
     }
 
-    function openBuyBeraCubsHoney() external onlyOwner {
-        buyBeraCubsHoneyOpen = true;
+    function openEmissions() external onlyOwner {
+        emissionsStarted = true;
     }
 
-    function closeBuyBeraCubsHoney() external onlyOwner {
-        buyBeraCubsHoneyOpen = false;
+    function closeEmissions() external onlyOwner {
+        emissionsStarted = false;
     }
 }

@@ -50,7 +50,8 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
     constructor(
         uint256 _initialSupply,
         uint256 _maxSupply,
-        address _treasuryAddress
+        address _treasuryAddress,
+        address _honeyTokenAddress
     ) ERC20("Fuzz Token", "FUZZ") {
         IUniswapV2Router02 _uniswapRouter = IUniswapV2Router02(
             0xB6120De62561D702087142DE405EEB02c18873Bc
@@ -59,7 +60,7 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
 
         uniswapPair = IUniswapV2Factory(_uniswapRouter.factory()).createPair(
             address(this),
-            0x5806E416dA447b267cEA759358cF22Cc41FAE80F
+            _honeyTokenAddress
         );
         initialSupply = _initialSupply;
         maxSupply = _maxSupply;

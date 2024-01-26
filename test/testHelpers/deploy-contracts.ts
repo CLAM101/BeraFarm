@@ -12,7 +12,7 @@ export async function deployContracts() {
   let beraFarm: BeraFarm;
   let mockHoney: MockHoney;
   const helpers = new Helpers();
-  const wBeraAddress = "0x5806E416dA447b267cEA759358cF22Cc41FAE80F";
+
   const routerAddress = "0xB6120De62561D702087142DE405EEB02c18873Bc";
   const factoryAddress = "0xad88D4ABbE0d0672f00eB3B83E6518608d82e95d";
 
@@ -39,42 +39,52 @@ export async function deployContracts() {
 
   console.log("BetterChicken Deployed At:", beraCub.target);
 
+  const mintToAddresses = [
+    owner.address,
+    otherAccount.address,
+    thirdAccount.address,
+    fourthAccount.address,
+    fifthAccount.address,
+    sixthAccount.address,
+  ];
+
+  mockHoney = (await MockHoney.deploy(
+    ethers.parseEther("10000000"),
+    mintToAddresses
+  )) as unknown as MockHoney;
+  await mockHoney.waitForDeployment();
+
+  console.log("Mock $Honey Deployed At:", mockHoney.target);
+
   fuzzToken = (await FuzzToken.deploy(
-    ethers.parseEther("1000000000"),
-    ethers.parseEther("1000000000000"),
-    otherAccount.address
+    ethers.parseEther("3000000"),
+    ethers.parseEther("10000000"),
+    otherAccount.address,
+    mockHoney.target
   )) as unknown as FuzzToken;
   await fuzzToken.waitForDeployment();
-
-  await helpers.wrapTokens(wBeraAddress, "200", owner, wBeraABI);
 
   const pair = await fuzzToken.getPair();
 
   const LPContract = new ethers.Contract(pair, ERC20ABI, owner);
 
-  console.log("Token Deployed At:", fuzzToken.target);
-
-  const wrapperContract = new ethers.Contract(
-    wBeraAddress,
-    wBeraABI,
-    owner
-  ) as any;
-
-  await wrapperContract
-    .connect(owner)
-    .approve(routerAddress, ethers.parseEther("200"));
+  console.log("$Fuzz Deployed At:", fuzzToken.target);
 
   await fuzzToken
     .connect(owner)
     .approve(routerAddress, ethers.parseEther("1000000"));
 
+  await mockHoney
+    .connect(owner)
+    .approve(routerAddress, ethers.parseEther("40000"));
+
   await helpers.addLiquidity(
     routerAddress,
-    wBeraAddress,
+    mockHoney.target,
     fuzzToken.target,
-    ethers.parseEther("200"),
+    ethers.parseEther("40000"),
     ethers.parseEther("1000000"),
-    ethers.parseEther("200"),
+    ethers.parseEther("40000"),
     ethers.parseEther("1000000"),
     owner.address,
     bexABI,
@@ -85,21 +95,14 @@ export async function deployContracts() {
 
   console.log("LP Balance:", LPBalance.toString());
 
-  mockHoney = (await MockHoney.deploy(
-    ethers.parseEther("1000000")
-  )) as unknown as MockHoney;
-  await mockHoney.waitForDeployment();
-
-  console.log("Token Deployed At:", mockHoney.target);
-
   beraFarm = (await BeraFarm.deploy(
     beraCub.target,
     fuzzToken.target,
     mockHoney.target,
     pair,
     otherAccount.address,
-    6,
-    10,
+    60,
+    5,
     15,
     factoryAddress,
     {
