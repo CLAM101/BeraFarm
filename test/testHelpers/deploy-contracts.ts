@@ -45,7 +45,6 @@ export async function deployContracts() {
     thirdAccount.address,
     fourthAccount.address,
     fifthAccount.address,
-    sixthAccount.address,
   ];
 
   mockHoney = (await MockHoney.deploy(
@@ -78,14 +77,34 @@ export async function deployContracts() {
     .connect(owner)
     .approve(routerAddress, ethers.parseEther("40000"));
 
+  let address0;
+
+  let address1;
+
+  let address1Amount;
+
+  let address0Amount;
+
+  if (fuzzToken.target < mockHoney.target) {
+    address0 = fuzzToken.target;
+    address0Amount = ethers.parseEther("1000000");
+    address1 = mockHoney.target;
+    address1Amount = ethers.parseEther("40000");
+  } else {
+    address0 = mockHoney.target;
+    address0Amount = ethers.parseEther("40000");
+    address1 = fuzzToken.target;
+    address1Amount = ethers.parseEther("1000000");
+  }
+
   await helpers.addLiquidity(
     routerAddress,
-    mockHoney.target,
-    fuzzToken.target,
-    ethers.parseEther("40000"),
-    ethers.parseEther("1000000"),
-    ethers.parseEther("40000"),
-    ethers.parseEther("1000000"),
+    address0,
+    address1,
+    address0Amount,
+    address1Amount,
+    address0Amount,
+    address1Amount,
     owner.address,
     bexABI,
     owner
@@ -100,7 +119,7 @@ export async function deployContracts() {
     fuzzToken.target,
     mockHoney.target,
     pair,
-    otherAccount.address,
+    sixthAccount.address,
     60,
     5,
     15,

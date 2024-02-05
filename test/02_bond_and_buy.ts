@@ -35,7 +35,7 @@ describe("Bera Farm Tests", async function () {
     // open platform for testing
 
     await beraFarm.connect(owner).setPlatformState(true);
-    await beraFarm.connect(owner).openBuyBeraCubsHoney();
+    await beraFarm.connect(owner).openBuyBeraCubs();
   });
 
   describe("Bera Farm Tests", async function () {
@@ -126,6 +126,63 @@ describe("Bera Farm Tests", async function () {
       expect(beraCubBalance).to.equal(amountOfBeraCubs);
     });
 
+    it("Should allow the user to bond Bera Cubs using Honey, transfer Honey to the treasury and transfer the Bera Cubs to the users wallet", async function () {
+      const bondCost = await beraFarm.getBondCost();
+
+      //based on Bera Price of 1000 and liquidity of 1 000 000 Fuzz and 200 Bera added to pool
+      const expectedBondCost = ethers.parseEther("0.17");
+
+      console.log("Bond Cost In Test", ethers.formatEther(bondCost) + "$HONEY");
+
+      expect(bondCost).to.equal(expectedBondCost);
+
+      // expected cost of bonding two BeraCubs with Honey
+      const expectedTotalCost = ethers.parseEther("0.34");
+
+      await expect(
+        mockHoney
+          .connect(thirdAccount)
+          .approve(beraFarm.target, expectedTotalCost)
+      ).to.not.be.reverted;
+
+      const amountOfBeraCubsToBond = "2";
+      const expectedTotalBeraCubBalance = "2";
+
+      const bondBeraCubTx = await beraFarm
+        .connect(thirdAccount)
+        .bondBeraCubs(amountOfBeraCubsToBond);
+
+      const finalizedTx = await bondBeraCubTx.wait(1);
+
+      let logs: Log[] = [];
+
+      if (finalizedTx) {
+        logs = finalizedTx.logs as unknown as Log[];
+      }
+
+      logs.forEach((log: Log) => {
+        const event = beraFarm.interface.parseLog(log);
+
+        if (event && event.name === "BeraCubsBonded") {
+          console.log("BeraCubsBonded args", event.args);
+          expect(event.args.sender).to.equal(thirdAccount.address);
+          expect(event.args.amountOfCubs).to.equal(amountOfBeraCubsToBond);
+        }
+      });
+
+      const beraCubBalance = await beraCub.balanceOf(thirdAccount.address);
+
+      const treasuryBalance = await mockHoney.balanceOf(sixthAccount.address);
+
+      console.log("Treasury Balance", ethers.formatUnits(treasuryBalance, 0));
+
+      expect(treasuryBalance).to.equal(ethers.parseEther("35.34"));
+
+      console.log("Bera Cub Balance", ethers.formatUnits(beraCubBalance, 0));
+
+      expect(beraCubBalance).to.equal(expectedTotalBeraCubBalance);
+    });
+
     // it("Estimates daily rewards accurately based on the daily interest set", async function () {
     //   const dailyInterest = await beraFarm.currentDailyRewards();
 
@@ -162,55 +219,6 @@ describe("Bera Farm Tests", async function () {
     //       );
     //     }
     //   });
-    // });
-
-    // it("Should allow the user to bond Bera Cubs using Honey, transfer Honey to the treasury and transfer the Bera Cubs to the users wallet", async function () {
-    //   const bondCost = await beraFarm.getBondCost();
-
-    //   //based on Bera Price of 1000 and liquidity of 1 000 000 Fuzz and 200 Bera added to pool
-    //   const expectedBondCost = ethers.parseEther("1.7");
-
-    //   console.log("Bond Cost In Test", ethers.formatEther(bondCost) + "$HONEY");
-
-    //   expect(bondCost).to.equal(expectedBondCost);
-
-    //   // expected cost of bonding two BeraCubs with Honey
-    //   const expectedTotalCost = ethers.parseEther("3.4");
-
-    //   await expect(
-    //     mockHoney.connect(owner).approve(beraFarm.target, expectedTotalCost)
-    //   ).to.not.be.reverted;
-
-    //   const amountOfBeraCubsToBond = "2";
-    //   const expectedTotalBeraCubBalance = "4";
-
-    //   const bondBeraCubTx = await beraFarm
-    //     .connect(owner)
-    //     .bondBeraCubs(amountOfBeraCubsToBond);
-
-    //   const finalizedTx = await bondBeraCubTx.wait(1);
-
-    //   let logs: Log[] = [];
-
-    //   if (finalizedTx) {
-    //     logs = finalizedTx.logs as unknown as Log[];
-    //   }
-
-    //   logs.forEach((log: Log) => {
-    //     const event = beraFarm.interface.parseLog(log);
-
-    //     if (event && event.name === "BeraCubsBonded") {
-    //       console.log("BeraCubsBonded args", event.args);
-    //       expect(event.args.sender).to.equal(owner.address);
-    //       expect(event.args.amountOfCubs).to.equal(amountOfBeraCubsToBond);
-    //     }
-    //   });
-
-    //   const beraCubBalance = await beraCub.balanceOf(owner.address);
-
-    //   console.log("Chicken Balance", ethers.formatUnits(beraCubBalance, 0));
-
-    //   expect(beraCubBalance).to.equal(expectedTotalBeraCubBalance);
     // });
 
     // it("Allows the owner to award bera Cubs", async function () {
