@@ -136,16 +136,18 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         require(buyBeraCubsOpenFuzz, "Buy Bera Cubs is closed");
         require(buyBeraCubsOpenFuzzOwner, "Buy Bera Cubs is closed owner");
         uint256 totalSupply = getTotalBeraCubs();
-        require(totalSupply > 5000, "Not enough Minted To Purchase WIth $Fuzz");
+        // IMPORTANT!!!! this is at 5 for testing, up to 5000 before deployment
+        require(totalSupply >= 5, "Not enough Minted To Purchase With $Fuzz");
+        require(totalSupply + _amount < 15000, "All Cubs sold out");
         uint256 beraCubBalance = beraCubNftContract.balanceOf(msg.sender);
         uint256 fuzzOwned = fuzz.balanceOf(msg.sender);
-
-        uint256 transactionTotal = maxBondCostSoFar.mul(_amount);
 
         uint256 beraCubsOwned = beraCubBalance + _amount;
         require(beraCubsOwned <= 20, "Max Bera Cubs Owned");
 
+        uint256 transactionTotal = maxBondCostSoFar.mul(_amount);
         require(fuzzOwned >= transactionTotal, "Not enough $FUZZ");
+
         beraCubNftContract.buyBeraCubs(msg.sender, _amount);
 
         Farmer memory farmer;
@@ -186,6 +188,8 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         // IMPORTANT!!!! this is at 3 for testing, up to 2500 before deployment
         if (totalSupply < 3) {
             transactionTotal = _amount.mul(honeyCostFirstBatch);
+
+            console.log("Transaction total in buy honey", transactionTotal);
         }
         // IMPORTANT!!!! this is at 3 for testing, up to 2500 before deployment
         if (totalSupply >= 3) {

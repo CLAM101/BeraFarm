@@ -35,7 +35,7 @@ describe("Bera Farm Tests", async function () {
     // open platform for testing
 
     await beraFarm.connect(owner).setPlatformState(true);
-    await beraFarm.connect(owner).openBuyBeraCubs();
+    await beraFarm.connect(owner).openBuyBeraCubsHoney();
   });
 
   describe("Bera Farm Tests", async function () {
@@ -181,6 +181,62 @@ describe("Bera Farm Tests", async function () {
       console.log("Bera Cub Balance", ethers.formatUnits(beraCubBalance, 0));
 
       expect(beraCubBalance).to.equal(expectedTotalBeraCubBalance);
+    });
+
+    it("Allows purchase of Cubs for Fuzz at the latest compound price and after all Honey cubs minted", async function () {
+      const expectedTransactionTotal =
+        beraFarm.maxBondCostSoFar() as unknown as number;
+
+      console.log(
+        "Expected Transaction Total in fuzz buy test",
+        expectedTransactionTotal
+      );
+
+      await expect(
+        fuzzToken
+          .connect(owner)
+          .transfer(fourthAccount.address, expectedTransactionTotal)
+      ).to.not.be.reverted;
+      await expect(
+        fuzzToken
+          .connect(fourthAccount)
+          .approve(beraFarm.target, expectedTransactionTotal)
+      ).to.not.be.reverted;
+
+      const amountOfBeraCubs = "2";
+      const buyBeraCubsFuzzTx = await beraFarm
+        .connect(otherAccount)
+        .buyBeraCubsHoney(amountOfBeraCubs);
+
+      const finalizedTx = await buyBeraCubsFuzzTx.wait();
+
+      let logs: Log[] = [];
+
+      if (finalizedTx) {
+        logs = finalizedTx.logs as unknown as Log[];
+      }
+
+      logs.forEach((log: Log) => {
+        const event = beraFarm.interface.parseLog(log);
+
+        if (event && event.name === "BoughtBeraCubsFuzz") {
+          console.log("Bought Bera Cub for $Fuzz", event.args);
+          expect(event.args.sender).to.equal(otherAccount.address);
+          expect(event.args.amountOfCubs).to.equal(amountOfBeraCubs);
+          expect(event.args.transactionTotal).to.equal(
+            expectedTransactionTotal
+          );
+        }
+      });
+
+      const beraCubBalance = await beraCub.balanceOf(otherAccount.address);
+
+      console.log(
+        "Bera Cub Balance at 10 $Honey pre cub",
+        ethers.formatUnits(beraCubBalance, 0)
+      );
+
+      expect(beraCubBalance).to.equal(amountOfBeraCubs);
     });
 
     // it("Estimates daily rewards accurately based on the daily interest set", async function () {
