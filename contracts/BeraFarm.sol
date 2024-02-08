@@ -36,16 +36,24 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         address to,
         uint256 amount
     );
-    event BoughtBeraCubsFuzz(address sender, uint256 amountOfCubs);
+    event BoughtBeraCubsFuzz(
+        address sender,
+        uint256 amountOfCubs,
+        uint256 transactionTotal
+    );
     event BoughtBeraCubsHoney(
         address sender,
         uint256 amountOfCubs,
         uint256 transactionTotal
     );
-    event RewardsClaimed(address sender, uint256 rewardAfterTax, uint256 tax);
-    event BeraCubsBonded(address sender, uint256 amountOfCubs);
-    event BeraCubCompounded(address sender, uint256 amountOfCubs);
+    event BeraCubsBonded(
+        address sender,
+        uint256 amountOfCubs,
+        uint256 transactionTotal
+    );
+    event BeraCubCompounded(address sender, uint256 compoundCost);
     event BeraCubsAwarded(address sender, uint256 amountOfCubs);
+    event RewardsClaimed(address sender, uint256 rewardAfterTax, uint256 tax);
 
     //Addresses
     IBERACUB private beraCubNftContract;
@@ -70,10 +78,11 @@ contract BeraFarm is Ownable, ReentrancyGuard {
     uint256 private dailyInterest;
     uint256 public claimTaxFuzz = 8;
     uint256 public claimTaxBond = 12;
-    uint256 public honeyCostFirstBatch = 5 * 1e18;
-    uint256 public honeyCostSecondBatch = 10 * 1e18;
-    uint256 public maxBondCostSoFar = 5;
+    uint256 public honeyCostFirstBatch;
+    uint256 public honeyCostSecondBatch;
+    uint256 public maxBondCostSoFar;
     uint256 public bondDiscount;
+    uint256 public baseLineCompoundCost;
     uint256 private immutable beraCubBase;
 
     //Array
@@ -107,7 +116,7 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         honey = IERC20(_honey);
         beraCubNftContract = IBERACUB(_beraCubNftContract);
         factory = IXDEXFactory(_factory);
-
+        baseLineCompoundCost = 5 * 1e18;
         // these are testnet token addresses and would need to be replaced in the case of a mainnet deployment
         honeyWberaPair = IUniswapV2Pair(
             factory.getPair(
@@ -119,10 +128,11 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         treasury = _treasury;
         dailyInterest = _dailyInterest;
         maxBondCostSoFar = _maxBondCostSoFar.mul(1e18);
-
+        maxBondCostSoFar = 5 * 1e18;
         //baseline interest rate is 10% APY but can be adjusted based on changes to daily interest
         beraCubBase = SafeMath.mul(10, 1e18);
-
+        honeyCostFirstBatch = 5 * 1e18;
+        honeyCostSecondBatch = 10 * 1e18;
         bondDiscount = _bondDiscount;
     }
 
@@ -163,7 +173,7 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         farmers[msg.sender] = farmer;
         _updateClaims(msg.sender, _amount);
 
-        emit BoughtBeraCubsFuzz(msg.sender, _amount);
+        emit BoughtBeraCubsFuzz(msg.sender, _amount, transactionTotal);
     }
 
     /**
@@ -177,7 +187,7 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         uint256 totalSupply = getTotalBeraCubs().add(_amount);
 
         // IMPORTANT!!!! this is at 5 for testing, up to 5000 before deployment
-        require(totalSupply < 5, "Honey Bera Cubs Sold Out buy with Fuzz");
+        require(totalSupply < 6, "Honey Bera Cubs Sold Out buy with Fuzz");
 
         uint256 transactionTotal;
 
@@ -186,13 +196,11 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         require(beraCubsOwned <= 20, "Max Bera Cubs Owned");
 
         // IMPORTANT!!!! this is at 3 for testing, up to 2500 before deployment
-        if (totalSupply < 3) {
+        if (totalSupply <= 3) {
             transactionTotal = _amount.mul(honeyCostFirstBatch);
-
-            console.log("Transaction total in buy honey", transactionTotal);
         }
         // IMPORTANT!!!! this is at 3 for testing, up to 2500 before deployment
-        if (totalSupply >= 3) {
+        if (totalSupply > 3) {
             transactionTotal = _amount.mul(honeyCostSecondBatch);
         }
 
@@ -218,11 +226,11 @@ contract BeraFarm is Ownable, ReentrancyGuard {
             farmer = Farmer(true, 0, 0, 0, 0);
             farmersAddresses.push(msg.sender);
         }
+
         _transferFrom(honey, msg.sender, address(treasury), transactionTotal);
 
         beraCubNftContract.buyBeraCubs(msg.sender, _amount);
         farmers[msg.sender] = farmer;
-        farmers[msg.sender].beraCubsBonded += _amount;
 
         _updateClaims(msg.sender, _amount);
 
@@ -269,7 +277,7 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         _updateClaims(msg.sender, _amount);
         farmers[msg.sender].beraCubsBonded += _amount;
 
-        emit BeraCubsBonded(msg.sender, _amount);
+        emit BeraCubsBonded(msg.sender, _amount, transactionTotal);
     }
 
     /**
@@ -313,7 +321,7 @@ contract BeraFarm is Ownable, ReentrancyGuard {
             beraCubsCompounded = 1;
         }
 
-        uint256 compoundCost = beraCubsCompounded.mul(5);
+        uint256 compoundCost = beraCubsCompounded.mul(baseLineCompoundCost);
 
         require(
             pendingClaims > compoundCost,
@@ -327,11 +335,14 @@ contract BeraFarm is Ownable, ReentrancyGuard {
 
         beraCubNftContract.buyBeraCubs(msg.sender, 1);
         farmer.claimsFuzz -= compoundCost;
-        _checkAndAdjustFuzzCost(compoundCost);
-        _updateClaims(msg.sender, 1);
+
         farmer.beraCubsCompounded += 1;
 
-        emit BeraCubCompounded(msg.sender, 1);
+        uint256 newCOmpoundCost = compoundCost + baseLineCompoundCost;
+        _checkAndAdjustFuzzCost(newCOmpoundCost);
+        _updateClaims(msg.sender, 1);
+
+        emit BeraCubCompounded(msg.sender, compoundCost);
     }
 
     function claim() external {
@@ -369,8 +380,6 @@ contract BeraFarm is Ownable, ReentrancyGuard {
             .mul(dailyInterest)
             .mul((time.sub(farmers[_user].lastUpdate)))
             .div(8640000);
-
-        console.log("Pending Fuzz: %s", pendingFuzz);
 
         return farmers[_user].claimsFuzz.add(pendingFuzz);
     }
@@ -419,8 +428,6 @@ contract BeraFarm is Ownable, ReentrancyGuard {
 
         require(token0 > 0 && token1 > 0, "Reserves not available");
 
-        console.log("Token 0 reserves", token0, "Token 1 reserves", token1);
-
         uint256 price;
 
         if (honey > fuzz) {
@@ -437,21 +444,20 @@ contract BeraFarm is Ownable, ReentrancyGuard {
     function getBondCost() public view returns (uint256) {
         uint256 tokenPrice = getFuzzPrice();
 
-        console.log("Token price", tokenPrice);
-
-        console.log("Max bond cost so far", maxBondCostSoFar);
-
         uint256 convertedMaxBondCostSoFar = maxBondCostSoFar.div(1e18);
 
         uint256 basePrice = convertedMaxBondCostSoFar.mul(tokenPrice);
         uint256 discount = SafeMath.sub(100, bondDiscount);
 
-        console.log("discount", discount);
         uint256 bondPrice = basePrice.mul(discount).div(100);
 
-        console.log("Bond price", bondPrice);
-
         return bondPrice;
+    }
+
+    function getFarmerByAddress(
+        address _address
+    ) external view returns (Farmer memory) {
+        return farmers[_address];
     }
 
     //Internal functions

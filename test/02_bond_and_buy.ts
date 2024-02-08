@@ -36,6 +36,7 @@ describe("Bera Farm Tests", async function () {
 
     await beraFarm.connect(owner).setPlatformState(true);
     await beraFarm.connect(owner).openBuyBeraCubsHoney();
+    await fuzzToken.connect(owner).enable_trading();
   });
 
   describe("Bera Farm Tests", async function () {
@@ -167,6 +168,7 @@ describe("Bera Farm Tests", async function () {
           console.log("BeraCubsBonded args", event.args);
           expect(event.args.sender).to.equal(thirdAccount.address);
           expect(event.args.amountOfCubs).to.equal(amountOfBeraCubsToBond);
+          expect(event.args.transactionTotal).to.equal(expectedTotalCost);
         }
       });
 
@@ -184,29 +186,30 @@ describe("Bera Farm Tests", async function () {
     });
 
     it("Allows purchase of Cubs for Fuzz at the latest compound price and after all Honey cubs minted", async function () {
-      const expectedTransactionTotal =
-        beraFarm.maxBondCostSoFar() as unknown as number;
+      const currentPricePerCub =
+        (await beraFarm.maxBondCostSoFar()) as unknown as number;
+
+      const amountOfBeraCubs = "1";
 
       console.log(
         "Expected Transaction Total in fuzz buy test",
-        expectedTransactionTotal
+        currentPricePerCub
       );
 
       await expect(
         fuzzToken
           .connect(owner)
-          .transfer(fourthAccount.address, expectedTransactionTotal)
+          .transfer(fourthAccount.address, currentPricePerCub)
       ).to.not.be.reverted;
       await expect(
         fuzzToken
           .connect(fourthAccount)
-          .approve(beraFarm.target, expectedTransactionTotal)
+          .approve(beraFarm.target, currentPricePerCub)
       ).to.not.be.reverted;
 
-      const amountOfBeraCubs = "2";
       const buyBeraCubsFuzzTx = await beraFarm
-        .connect(otherAccount)
-        .buyBeraCubsHoney(amountOfBeraCubs);
+        .connect(fourthAccount)
+        .buyBeraCubsFuzz(amountOfBeraCubs);
 
       const finalizedTx = await buyBeraCubsFuzzTx.wait();
 
@@ -221,18 +224,18 @@ describe("Bera Farm Tests", async function () {
 
         if (event && event.name === "BoughtBeraCubsFuzz") {
           console.log("Bought Bera Cub for $Fuzz", event.args);
-          expect(event.args.sender).to.equal(otherAccount.address);
+          expect(event.args.sender).to.equal(fourthAccount.address);
           expect(event.args.amountOfCubs).to.equal(amountOfBeraCubs);
-          expect(event.args.transactionTotal).to.equal(
-            expectedTransactionTotal
-          );
+          expect(event.args.transactionTotal).to.equal(currentPricePerCub);
         }
       });
 
-      const beraCubBalance = await beraCub.balanceOf(otherAccount.address);
+      const beraCubBalance = await beraCub.balanceOf(fourthAccount.address);
 
       console.log(
-        "Bera Cub Balance at 10 $Honey pre cub",
+        `Bera Cub Balance at ${ethers.formatEther(
+          currentPricePerCub
+        )} $Fuzz pre cub`,
         ethers.formatUnits(beraCubBalance, 0)
       );
 
