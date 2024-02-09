@@ -122,6 +122,7 @@ export async function deployContracts() {
     sixthAccount.address,
     60,
     5,
+    8,
     15,
     factoryAddress,
     {

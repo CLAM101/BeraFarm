@@ -75,9 +75,8 @@ contract BeraFarm is Ownable, ReentrancyGuard {
     bool public emissionsClosedOwner = false;
 
     //Rates and Pricing
-    uint256 private dailyInterest;
-    uint256 public claimTaxFuzz = 8;
-    uint256 public claimTaxBond = 12;
+    uint256 public dailyInterest;
+    uint256 public claimTaxFuzz;
     uint256 public honeyCostFirstBatch;
     uint256 public honeyCostSecondBatch;
     uint256 public maxBondCostSoFar;
@@ -108,6 +107,7 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         address _treasury, //Wallet to hold fees and taxes
         uint256 _dailyInterest, //as a percentage
         uint256 _maxBondCostSoFar, //Cost of a Bera Cub in $FUZZ
+        uint256 _claimTaxFuzz, //As percentage
         uint256 _bondDiscount, //As percentge
         address _factory // Dex factory
     ) {
@@ -124,12 +124,13 @@ contract BeraFarm is Ownable, ReentrancyGuard {
                 0x5806E416dA447b267cEA759358cF22Cc41FAE80F
             )
         );
+        claimTaxFuzz = _claimTaxFuzz;
 
         treasury = _treasury;
         dailyInterest = _dailyInterest;
         maxBondCostSoFar = _maxBondCostSoFar.mul(1e18);
         maxBondCostSoFar = 5 * 1e18;
-        //baseline interest rate is 10% APY but can be adjusted based on changes to daily interest
+        //baseline interest rate is 10 Units of $FUZZ per day and can be adjsuted with the daily interest rate percentage
         beraCubBase = SafeMath.mul(10, 1e18);
         honeyCostFirstBatch = 5 * 1e18;
         honeyCostSecondBatch = 10 * 1e18;
@@ -309,7 +310,6 @@ contract BeraFarm is Ownable, ReentrancyGuard {
 
     /**
      * @notice Allows for compounding of Bera Cubs
-   
      * @dev Buys new Bera Cubs based on a chosen amount of Bera cubs to buy based on availble claimable rewards
      */
     function compoundBeraCubs() public nonReentrant {
@@ -535,10 +535,6 @@ contract BeraFarm is Ownable, ReentrancyGuard {
 
     function setFuzzTax(uint256 _claimTaxFuzz) public onlyOwner {
         claimTaxFuzz = _claimTaxFuzz;
-    }
-
-    function setBondTax(uint256 _claimTaxBond) public onlyOwner {
-        claimTaxBond = _claimTaxBond;
     }
 
     function setPlatformState(bool _isLive) public onlyOwner {

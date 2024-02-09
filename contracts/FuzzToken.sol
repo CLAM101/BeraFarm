@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./Interfaces/IFUZZTOKEN.sol";
 import "hardhat/console.sol";
+import "./Interfaces/IBERACUB.sol";
 
 interface IUniswapV2Factory {
     function createPair(
@@ -36,16 +37,21 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
     address public uniswapPair;
     IUniswapV2Router02 private uniswapRouter;
 
+    IBERACUB private beraCubNftContract;
+
     using SafeMath for uint256;
     using SafeERC20 for ERC20;
 
     mapping(address => bool) private isController;
     event ControllerRemoved(address controllerRemoved);
     event ControllerAdded(address newController);
-    bool public tradingEnabled = false;
+
+    bool public lubricating = true;
+    bool public cubsOnly = true;
     address public treasuryAddress;
     uint256 public maxTransactionPercent = 1;
     uint256 private maxTransactionAmount;
+    address public liquidityPool;
 
     constructor(
         uint256 _initialSupply,
@@ -72,6 +78,39 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
         );
     }
 
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal virtual override {
+        super._beforeTokenTransfer(from, to, amount);
+        // If liquidityPool is address(0) we've not yet enabled trading. Liquidity Loading....
+        if (liquidityPool == address(0)) {
+            require(
+                from == owner() || to == owner(),
+                "Patience - Trading Not Started Yet!"
+            );
+            return;
+        }
+        if (cubsOnly) {
+            uint256 traderCubbalance = beraCubNftContract.balanceOf(to);
+            require(
+                traderCubbalance > 0,
+                "Cubs Only - You need to have a Bera Cub to trade FUZZ!"
+            );
+        }
+
+        // Allow deployer (owner) to send/receive any amount and the liquidityPool to receive any amount.
+        // This allows for loading of the LP, and for people to sell tokens into the LP whilst lubrication in progress.
+        if (lubricating && from != owner() && to != liquidityPool) {
+            // Require that a receiving wallet will not hold more than 1% of supply after a transfer whilst lubrication is in effect
+            require(
+                balanceOf(to) <= totalSupply() / 100,
+                "Just getting warmed up, limit of 1% of Fuzz can be Traded until Lubrication is complete!"
+            );
+        }
+    }
+
     function mint(
         address to_,
         uint256 amount_
@@ -90,16 +129,17 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
         _burn(from_, amount_);
     }
 
-    function checkMaxTransaction(address from, uint256 amount) internal view {
-        require(
-            amount <= maxTransactionAmount || isController[from],
-            "Exceeds maximum transaction amount"
-        );
+    function removeLubrication() external onlyOwner {
+        lubricating = false;
     }
 
-    function removeLimits() external onlyOwner {
-        maxTransactionPercent = 100;
-        maxTransactionAmount = type(uint256).max;
+    function openTradingToEveryone() external onlyOwner {
+        cubsOnly = false;
+    }
+
+    // Define the LP address to enable trading!
+    function setLiquidityPool(address _liquidityPool) external onlyOwner {
+        liquidityPool = _liquidityPool;
     }
 
     function addController(address toAdd_) external onlyOwner {
@@ -117,25 +157,7 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
         _;
     }
 
-    function pause_trading() public onlyOwner {
-        tradingEnabled = false;
-    }
-
-    function enable_trading() public onlyOwner {
-        tradingEnabled = true;
-    }
-
     function getPair() public view returns (address) {
         return uniswapPair;
-    }
-
-    function _transfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal override {
-        require(tradingEnabled || from == owner(), "Transfer is disabled");
-        checkMaxTransaction(from, amount);
-        ERC20._transfer(from, to, amount);
     }
 }

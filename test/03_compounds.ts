@@ -7,7 +7,7 @@ import { BlockTag, Log } from "@ethersproject/abstract-provider";
 import { deployContracts } from "./testHelpers/deploy-contracts";
 import { BeraCub, BeraFarm, FuzzToken, MockHoney } from "../typechain-types";
 
-describe("Bera Farm Tests", async function () {
+describe("Compounding Tests", async function () {
   let beraCub: BeraCub,
     beraFarm: BeraFarm,
     fuzzToken: FuzzToken,

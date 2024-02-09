@@ -39,7 +39,7 @@ describe("Bera Farm Tests", async function () {
     await fuzzToken.connect(owner).enable_trading();
   });
 
-  describe("Bera Farm Tests", async function () {
+  describe("Bond and Buy Tests", async function () {
     it("Allows Purchase of Bera Cubs with Honey at 5 $Honey per Cub", async function () {
       const expectedTransactionTotal = ethers.parseEther("15");
       await expect(
