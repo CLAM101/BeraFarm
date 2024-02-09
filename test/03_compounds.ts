@@ -148,5 +148,56 @@ describe("Bera Farm Tests", async function () {
 
       console.log("Farmer After Compound", farmerAfterCompound);
     });
+
+    it("Effectively Compounds Cubs on a 10 fuzz interval", async function () {
+      const expectedCompoundCost2 = ethers.parseEther("10");
+
+      let maxBondCostSoFar = await beraFarm.maxBondCostSoFar();
+
+      console.log("Max Bond Cost So Far", ethers.formatEther(maxBondCostSoFar));
+
+      expect(maxBondCostSoFar).to.equal(expectedCompoundCost2);
+
+      const compoundTx = await beraFarm.connect(owner).compoundBeraCubs();
+
+      const finalizedCompound2 = await compoundTx.wait();
+
+      let compound2Logs: Log[] = [];
+
+      if (finalizedCompound2) {
+        compound2Logs = finalizedCompound2!.logs as unknown as Log[];
+      }
+
+      compound2Logs.forEach((log: Log) => {
+        const event = beraFarm.interface.parseLog(log);
+
+        if (event && event.name === "BeraCubCompounded") {
+          console.log("Compounded Bera Cub", event.args);
+          expect(event.args.sender).to.equal(owner.address);
+          expect(event.args.compoundCost).to.equal(expectedCompoundCost2);
+        }
+      });
+
+      const beraCubBalanceAfterCompound = await beraCub.balanceOf(
+        owner.address
+      );
+
+      expect(beraCubBalanceAfterCompound).to.equal(ethers.formatUnits(5, 0));
+
+      maxBondCostSoFar = await beraFarm.maxBondCostSoFar();
+
+      console.log(
+        "Max Bond Cost So Far after 2 compounds",
+        ethers.formatEther(maxBondCostSoFar)
+      );
+
+      expect(maxBondCostSoFar).to.equal(ethers.parseEther("15"));
+
+      const farmerAfterCompound = await beraFarm
+        .connect(owner)
+        .getFarmerByAddress(owner.address);
+
+      console.log("Farmer After Compound 2", farmerAfterCompound);
+    });
   });
 });

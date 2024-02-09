@@ -273,9 +273,10 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         _transferFrom(honey, msg.sender, address(treasury), transactionTotal);
 
         beraCubNftContract.buyBeraCubs(msg.sender, _amount);
+
+        farmer.beraCubsBonded += _amount;
         farmers[msg.sender] = farmer;
         _updateClaims(msg.sender, _amount);
-        farmers[msg.sender].beraCubsBonded += _amount;
 
         emit BeraCubsBonded(msg.sender, _amount, transactionTotal);
     }
@@ -317,9 +318,7 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         Farmer storage farmer = farmers[msg.sender];
         uint256 beraCubsCompounded = farmer.beraCubsCompounded;
 
-        if (beraCubsCompounded == 0) {
-            beraCubsCompounded = 1;
-        }
+        beraCubsCompounded += 1;
 
         uint256 compoundCost = beraCubsCompounded.mul(baseLineCompoundCost);
 
@@ -336,7 +335,7 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         beraCubNftContract.buyBeraCubs(msg.sender, 1);
         farmer.claimsFuzz -= compoundCost;
 
-        farmer.beraCubsCompounded += 1;
+        farmer.beraCubsCompounded = beraCubsCompounded;
 
         uint256 newCOmpoundCost = compoundCost + baseLineCompoundCost;
         _checkAndAdjustFuzzCost(newCOmpoundCost);
@@ -473,12 +472,17 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         address _address,
         uint256 numberOfNewBeraCubs
     ) internal {
-        if (!emissionsStarted || emissionsClosedOwner) return;
+        uint256 time = block.timestamp;
+        if (!emissionsStarted || emissionsClosedOwner) {
+            farmers[_address].lastUpdate = time;
+            return;
+        }
+
         uint256 beraCubsOwned = beraCubNftContract.balanceOf(_address);
         uint256 beraCubsBalanceToCalcFrom = beraCubsOwned.sub(
             numberOfNewBeraCubs
         );
-        uint256 time = block.timestamp;
+
         uint256 timerFrom = farmers[_address].lastUpdate;
         if (timerFrom > 0) {
             farmers[_address].claimsFuzz += beraCubsBalanceToCalcFrom
