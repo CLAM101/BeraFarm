@@ -35,7 +35,8 @@ describe("Emissions Tax, Rewards and controls Tests", async function () {
     // open platform for testing
     await beraFarm.connect(owner).setPlatformState(true);
     await beraFarm.connect(owner).openBuyBeraCubsHoney();
-    await fuzzToken.connect(owner).enable_trading();
+    await beraCub.connect(owner).openMinting();
+    await fuzzToken.connect(owner).enableTrading();
   });
 
   describe("Bera Farm Tests", async function () {
@@ -50,10 +51,14 @@ describe("Emissions Tax, Rewards and controls Tests", async function () {
       const expectedTotalCost = ethers.parseEther("10");
 
       await expect(
-        mockHoney.connect(owner).approve(beraFarm.target, expectedTotalCost)
+        mockHoney
+          .connect(thirdAccount)
+          .approve(beraFarm.target, expectedTotalCost)
       ).to.not.be.reverted;
 
-      const buyBerasHoneyTx = await beraFarm.connect(owner).buyBeraCubsHoney(2);
+      const buyBerasHoneyTx = await beraFarm
+        .connect(thirdAccount)
+        .buyBeraCubsHoney(2);
 
       await buyBerasHoneyTx.wait(1);
 
@@ -62,7 +67,7 @@ describe("Emissions Tax, Rewards and controls Tests", async function () {
       await ethers.provider.send("evm_increaseTime", [stakingDuration]);
       await ethers.provider.send("evm_mine");
 
-      const claimRewardsTx = await beraFarm.connect(owner).claim();
+      const claimRewardsTx = await beraFarm.connect(thirdAccount).claim();
 
       const finalizedTx = await claimRewardsTx.wait(1);
 
@@ -81,7 +86,7 @@ describe("Emissions Tax, Rewards and controls Tests", async function () {
 
         if (event && event.name === "RewardsClaimed") {
           console.log("Rewards Claimed", event.args);
-          expect(event.args.sender).to.equal(owner.address);
+          expect(event.args.sender).to.equal(thirdAccount.address);
           expect(event.args.rewardAfterTax).to.be.closeTo(
             expectedAfterTax,
             ethers.parseEther("1")

@@ -36,7 +36,8 @@ describe("Bera Farm Tests", async function () {
 
     await beraFarm.connect(owner).setPlatformState(true);
     await beraFarm.connect(owner).openBuyBeraCubsHoney();
-    await fuzzToken.connect(owner).enable_trading();
+    await fuzzToken.connect(owner).enableTrading();
+    await beraCub.connect(owner).openMinting();
   });
 
   describe("Bond and Buy Tests", async function () {
@@ -210,6 +211,7 @@ describe("Bera Farm Tests", async function () {
           .connect(owner)
           .transfer(fourthAccount.address, currentPricePerCub)
       ).to.not.be.reverted;
+
       await expect(
         fuzzToken
           .connect(fourthAccount)

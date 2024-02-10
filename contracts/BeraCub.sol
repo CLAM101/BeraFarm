@@ -27,6 +27,7 @@ contract BeraCub is Ownable, ERC721URIStorage {
         address _reciever,
         uint256 _amount
     ) public onlyController {
+        require(mintingOpen, "MintingNotOpen");
         string memory tokenURI = formatTokenURI();
 
         uint256 newTotalSupply = tokenCounter + _amount;
@@ -49,7 +50,7 @@ contract BeraCub is Ownable, ERC721URIStorage {
         return tokenCounter;
     }
 
-    function openMinting() public {
+    function openMinting() public onlyOwner {
         mintingOpen = true;
         emit MintingOpened(mintingOpen);
     }
@@ -64,7 +65,7 @@ contract BeraCub is Ownable, ERC721URIStorage {
         emit ControllerRemoved(toRemove_);
     }
 
-    function pauseMinting() public {
+    function pauseMinting() public onlyOwner {
         mintingOpen = false;
         emit MintingPaused(mintingOpen);
     }

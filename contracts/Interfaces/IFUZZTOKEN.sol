@@ -6,4 +6,6 @@ interface IFUZZTOKEN is IERC20 {
     function burn(address from, uint256 amount) external;
 
     function mint(address to, uint256 amount) external;
+
+    function openTradingToEveryone() external;
 }

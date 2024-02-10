@@ -59,7 +59,8 @@ export async function deployContracts() {
     ethers.parseEther("3000000"),
     ethers.parseEther("10000000"),
     otherAccount.address,
-    mockHoney.target
+    mockHoney.target,
+    beraCub.target
   )) as unknown as FuzzToken;
   await fuzzToken.waitForDeployment();
 

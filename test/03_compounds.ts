@@ -35,7 +35,8 @@ describe("Compounding Tests", async function () {
     // open platform for testing
     await beraFarm.connect(owner).setPlatformState(true);
     await beraFarm.connect(owner).openBuyBeraCubsHoney();
-    await fuzzToken.connect(owner).enable_trading();
+    await beraCub.connect(owner).openMinting();
+    await fuzzToken.connect(owner).enableTrading();
   });
 
   describe("Bera Farm Tests", async function () {

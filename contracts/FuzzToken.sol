@@ -46,8 +46,9 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
     event ControllerRemoved(address controllerRemoved);
     event ControllerAdded(address newController);
 
-    bool public lubricating = true;
+    bool public hibernating = true;
     bool public cubsOnly = true;
+    bool public tradingEnabled = false;
     address public treasuryAddress;
     uint256 public maxTransactionPercent = 1;
     uint256 private maxTransactionAmount;
@@ -57,7 +58,8 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
         uint256 _initialSupply,
         uint256 _maxSupply,
         address _treasuryAddress,
-        address _honeyTokenAddress
+        address _honeyTokenAddress,
+        address _beraCubNftContract
     ) ERC20("Fuzz Token", "FUZZ") {
         IUniswapV2Router02 _uniswapRouter = IUniswapV2Router02(
             0xB6120De62561D702087142DE405EEB02c18873Bc
@@ -73,6 +75,7 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
         treasuryAddress = _treasuryAddress;
         isController[msg.sender] = true;
         _mint(msg.sender, initialSupply);
+        beraCubNftContract = IBERACUB(_beraCubNftContract);
         maxTransactionAmount = initialSupply.mul(maxTransactionPercent).div(
             100
         );
@@ -85,14 +88,15 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
     ) internal virtual override {
         super._beforeTokenTransfer(from, to, amount);
         // If liquidityPool is address(0) we've not yet enabled trading. Liquidity Loading....
-        if (liquidityPool == address(0)) {
+        if (!tradingEnabled) {
             require(
                 from == owner() || to == owner(),
                 "Patience - Trading Not Started Yet!"
             );
             return;
         }
-        if (cubsOnly) {
+        if (cubsOnly && to != address(0)) {
+            console.log("To address in cub check on fuzz token contract", to);
             uint256 traderCubbalance = beraCubNftContract.balanceOf(to);
             require(
                 traderCubbalance > 0,
@@ -101,12 +105,12 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
         }
 
         // Allow deployer (owner) to send/receive any amount and the liquidityPool to receive any amount.
-        // This allows for loading of the LP, and for people to sell tokens into the LP whilst lubrication in progress.
-        if (lubricating && from != owner() && to != liquidityPool) {
-            // Require that a receiving wallet will not hold more than 1% of supply after a transfer whilst lubrication is in effect
+        // This allows for loading of the LP, and for people to sell tokens into the LP whilst hibernation in progress.
+        if (hibernating && from != owner() && to != liquidityPool) {
+            // Require that a receiving wallet will not hold more than 1% of supply after a transfer whilst hibernation is in effect
             require(
                 balanceOf(to) <= totalSupply() / 100,
-                "Just getting warmed up, limit of 1% of Fuzz can be Traded until Lubrication is complete!"
+                "Just getting warmed up, limit of 1% of Fuzz can be Traded until Bera Hibernation is complete!"
             );
         }
     }
@@ -115,6 +119,7 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
         address to_,
         uint256 amount_
     ) external override onlyController {
+        console.log("Mint to address", to_);
         require(
             totalSupply().add(amount_) <= maxSupply,
             "Maximum supply reached"
@@ -129,12 +134,20 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
         _burn(from_, amount_);
     }
 
-    function removeLubrication() external onlyOwner {
-        lubricating = false;
+    function removeHibernation() external onlyOwner {
+        hibernating = false;
     }
 
-    function openTradingToEveryone() external onlyOwner {
+    function openTradingToEveryoneOwner() external onlyOwner {
         cubsOnly = false;
+    }
+
+    function openTradingToEveryone() external onlyController {
+        cubsOnly = false;
+    }
+
+    function enableTrading() external onlyOwner {
+        tradingEnabled = true;
     }
 
     // Define the LP address to enable trading!

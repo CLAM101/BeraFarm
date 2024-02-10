@@ -214,6 +214,7 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         if (totalSupply >= 5 && !bondingOpen && !bondingClosedOwner) {
             _openBonding();
             _openFuzzSale();
+            fuzz.openTradingToEveryone();
         }
 
         uint256 honeyBalance = honey.balanceOf(msg.sender);
@@ -350,7 +351,11 @@ contract BeraFarm is Ownable, ReentrancyGuard {
             "sender must be registered Bera Cub farmer to claim yields"
         );
 
+        console.log("sender", msg.sender);
+
         uint256 beraCubsOwned = beraCubNftContract.balanceOf(msg.sender);
+
+        console.log("beraCubsOwned", beraCubsOwned);
         require(
             beraCubsOwned > 0,
             "sender must own at least one Bera Cub to claim yields"
