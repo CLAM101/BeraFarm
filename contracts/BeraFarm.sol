@@ -66,7 +66,6 @@ contract BeraFarm is Ownable, ReentrancyGuard {
 
     //Platfrom Settings
     bool public isLive = false;
-    bool public bondingOpen = false;
     bool public bondingClosedOwner = false;
     bool public buyBeraCubsHoneyOpen = false;
     bool public buyBeraCubsOpenFuzz = false;
@@ -78,6 +77,8 @@ contract BeraFarm is Ownable, ReentrancyGuard {
     uint256 public dailyInterest;
     uint256 public claimTaxFuzz;
     uint256 public honeyCostFirstBatch;
+    // IMPORTANT!!!! this is at 3 for testing, up to 2500 before deployment
+    uint256 public maxSupplyFirstBatch = 3;
     uint256 public honeyCostSecondBatch;
     uint256 public maxBondCostSoFar;
     uint256 public bondDiscount;
@@ -117,7 +118,7 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         beraCubNftContract = IBERACUB(_beraCubNftContract);
         factory = IXDEXFactory(_factory);
         baseLineCompoundCost = 5 * 1e18;
-        // these are testnet token addresses and would need to be replaced in the case of a mainnet deployment
+        // IMPORTANT!! these are testnet token addresses and would need to be replaced in the case of a mainnet deployment
         honeyWberaPair = IUniswapV2Pair(
             factory.getPair(
                 0x7EeCA4205fF31f947EdBd49195a7A88E6A91161B,
@@ -144,7 +145,6 @@ contract BeraFarm is Ownable, ReentrancyGuard {
      */
     function buyBeraCubsFuzz(uint256 _amount) external nonReentrant {
         require(isLive, "Platform is offline");
-        require(buyBeraCubsOpenFuzz, "Buy Bera Cubs is closed");
         require(buyBeraCubsOpenFuzzOwner, "Buy Bera Cubs is closed owner");
         uint256 totalSupply = getTotalBeraCubs();
         // IMPORTANT!!!! this is at 5 for testing, up to 5000 before deployment
@@ -185,10 +185,15 @@ contract BeraFarm is Ownable, ReentrancyGuard {
     function buyBeraCubsHoney(uint256 _amount) public nonReentrant {
         require(isLive, "Platform is offline");
         require(buyBeraCubsHoneyOpen, "Buy Bera Cubs is closed");
-        uint256 totalSupply = getTotalBeraCubs().add(_amount);
 
-        // IMPORTANT!!!! this is at 5 for testing, up to 5000 before deployment
-        require(totalSupply < 6, "Honey Bera Cubs Sold Out buy with Fuzz");
+        uint256 totalSupplyBeforeAmount = getTotalBeraCubs();
+        uint256 totalSupplyPlusAmount = totalSupplyBeforeAmount.add(_amount);
+
+        // IMPORTANT!!!! this is at 6 for testing, up to 5000 before deployment
+        require(
+            totalSupplyPlusAmount < 6,
+            "Honey Bera Cubs Sold Out buy with Fuzz"
+        );
 
         uint256 transactionTotal;
 
@@ -196,25 +201,31 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         uint256 beraCubsOwned = beraCubBalance + _amount;
         require(beraCubsOwned <= 20, "Max Bera Cubs Owned");
 
-        // IMPORTANT!!!! this is at 3 for testing, up to 2500 before deployment
-        if (totalSupply <= 3) {
+        if (
+            totalSupplyBeforeAmount <= maxSupplyFirstBatch &&
+            totalSupplyPlusAmount <= maxSupplyFirstBatch
+        ) {
             transactionTotal = _amount.mul(honeyCostFirstBatch);
-        }
-        // IMPORTANT!!!! this is at 3 for testing, up to 2500 before deployment
-        if (totalSupply > 3) {
+        } else if (totalSupplyBeforeAmount > maxSupplyFirstBatch) {
             transactionTotal = _amount.mul(honeyCostSecondBatch);
-        }
+        } else if (
+            totalSupplyBeforeAmount <= maxSupplyFirstBatch &&
+            totalSupplyPlusAmount > maxSupplyFirstBatch
+        ) {
+            uint256 unitsAtSecondBatchPrice = totalSupplyPlusAmount.sub(
+                maxSupplyFirstBatch
+            );
 
-        // IMPORTANT!!!! this is at 2 for testing, up to 1250 before deployment
-        if (totalSupply >= 2 && !emissionsStarted && !emissionsClosedOwner) {
-            _openEmissions();
-        }
+            transactionTotal = unitsAtSecondBatchPrice.mul(
+                honeyCostSecondBatch
+            );
 
-        // IMPORTANT!!!! this is at 5 for testing, up to 5000 before deployment
-        if (totalSupply >= 5 && !bondingOpen && !bondingClosedOwner) {
-            _openBonding();
-            _openFuzzSale();
-            fuzz.openTradingToEveryone();
+            uint256 remainingCubs = _amount.sub(unitsAtSecondBatchPrice);
+
+            if (remainingCubs > 0) {
+                uint256 remainingCost = remainingCubs.mul(honeyCostFirstBatch);
+                transactionTotal = transactionTotal.add(remainingCost);
+            }
         }
 
         uint256 honeyBalance = honey.balanceOf(msg.sender);
@@ -236,6 +247,20 @@ contract BeraFarm is Ownable, ReentrancyGuard {
 
         _updateClaims(msg.sender, _amount);
 
+        // IMPORTANT!!!! this is at 2 for testing, up to 1250 before deployment
+        if (
+            totalSupplyPlusAmount >= 2 &&
+            !emissionsStarted &&
+            !emissionsClosedOwner
+        ) {
+            _openEmissions();
+        }
+
+        // IMPORTANT!!!! this is at 5 for testing, up to 5000 before deployment
+        if (totalSupplyPlusAmount >= 5) {
+            fuzz.openTradingToEveryone();
+        }
+
         emit BoughtBeraCubsHoney(msg.sender, _amount, transactionTotal);
     }
 
@@ -246,7 +271,6 @@ contract BeraFarm is Ownable, ReentrancyGuard {
      */
     function bondBeraCubs(uint256 _amount) external nonReentrant {
         require(isLive, "Platform is offline");
-        require(bondingOpen, "Bonding is closed");
         require(!bondingClosedOwner, "Bonding is closed owner");
         uint256 totalSupply = getTotalBeraCubs();
         // IMPORTANT!!!! this is at 5 for testing, up to 5000 before deployment
@@ -262,6 +286,8 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         uint256 transactionTotal = honeyAmount.mul(_amount);
 
         uint256 honeyBalance = honey.balanceOf(msg.sender);
+
+        console.log("Honey Balance in bond", honeyBalance);
 
         require(honeyBalance >= transactionTotal, "Not enough $HONEY");
 
@@ -338,8 +364,8 @@ contract BeraFarm is Ownable, ReentrancyGuard {
 
         farmer.beraCubsCompounded = beraCubsCompounded;
 
-        uint256 newCOmpoundCost = compoundCost + baseLineCompoundCost;
-        _checkAndAdjustFuzzCost(newCOmpoundCost);
+        uint256 newCompoundCost = compoundCost + baseLineCompoundCost;
+        _checkAndAdjustFuzzCost(newCompoundCost);
         _updateClaims(msg.sender, 1);
 
         emit BeraCubCompounded(msg.sender, compoundCost);
@@ -351,11 +377,8 @@ contract BeraFarm is Ownable, ReentrancyGuard {
             "sender must be registered Bera Cub farmer to claim yields"
         );
 
-        console.log("sender", msg.sender);
-
         uint256 beraCubsOwned = beraCubNftContract.balanceOf(msg.sender);
 
-        console.log("beraCubsOwned", beraCubsOwned);
         require(
             beraCubsOwned > 0,
             "sender must own at least one Bera Cub to claim yields"
@@ -519,14 +542,6 @@ contract BeraFarm is Ownable, ReentrancyGuard {
 
     function _openEmissions() internal {
         emissionsStarted = true;
-    }
-
-    function _openBonding() internal {
-        bondingOpen = true;
-    }
-
-    function _openFuzzSale() internal {
-        buyBeraCubsOpenFuzz = true;
     }
 
     //Only owner platform settings

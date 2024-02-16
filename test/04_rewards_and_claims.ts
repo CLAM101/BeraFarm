@@ -39,7 +39,7 @@ describe("Emissions Tax, Rewards and controls Tests", async function () {
     await fuzzToken.connect(owner).enableTrading();
   });
 
-  describe("Bera Farm Tests", async function () {
+  describe("Rewards & Claims Tests", async function () {
     it("Estimates daily rewards accurately based on the daily interest set", async function () {
       const dailyInterest = await beraFarm.currentDailyRewards();
 

@@ -34,7 +34,7 @@ interface IUniswapV2Router02 {
 contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
     uint256 private initialSupply;
     uint256 public maxSupply;
-    address public uniswapPair;
+
     IUniswapV2Router02 private uniswapRouter;
 
     IBERACUB private beraCubNftContract;
@@ -66,7 +66,7 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
         );
         uniswapRouter = _uniswapRouter;
 
-        uniswapPair = IUniswapV2Factory(_uniswapRouter.factory()).createPair(
+        liquidityPool = IUniswapV2Factory(_uniswapRouter.factory()).createPair(
             address(this),
             _honeyTokenAddress
         );
@@ -87,7 +87,7 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
         uint256 amount
     ) internal virtual override {
         super._beforeTokenTransfer(from, to, amount);
-        // If liquidityPool is address(0) we've not yet enabled trading. Liquidity Loading....
+
         if (!tradingEnabled) {
             require(
                 from == owner() || to == owner(),
@@ -96,11 +96,10 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
             return;
         }
         if (cubsOnly && to != address(0)) {
-            console.log("To address in cub check on fuzz token contract", to);
             uint256 traderCubbalance = beraCubNftContract.balanceOf(to);
             require(
                 traderCubbalance > 0,
-                "Cubs Only - You need to have a Bera Cub to trade FUZZ!"
+                "Cubs Only Is active - You need to have a Bera Cub to trade FUZZ!"
             );
         }
 
@@ -119,7 +118,6 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
         address to_,
         uint256 amount_
     ) external override onlyController {
-        console.log("Mint to address", to_);
         require(
             totalSupply().add(amount_) <= maxSupply,
             "Maximum supply reached"
@@ -150,9 +148,8 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
         tradingEnabled = true;
     }
 
-    // Define the LP address to enable trading!
-    function setLiquidityPool(address _liquidityPool) external onlyOwner {
-        liquidityPool = _liquidityPool;
+    function disableTrading() external onlyOwner {
+        tradingEnabled = false;
     }
 
     function addController(address toAdd_) external onlyOwner {
@@ -171,6 +168,6 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
     }
 
     function getPair() public view returns (address) {
-        return uniswapPair;
+        return liquidityPool;
     }
 }

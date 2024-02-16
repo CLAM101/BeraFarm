@@ -6,6 +6,12 @@ import { wBeraABI } from "./ABI/wbera-abi";
 import { bexABI } from "./ABI/bex-abi";
 import { ERC20ABI } from "./ABI/ERC20-abi";
 
+export let maxCubSupply = 15000;
+
+export async function setMaxCubSupply(newSupply: number) {
+  maxCubSupply = newSupply;
+}
+
 export async function deployContracts() {
   let beraCub: BeraCub;
   let fuzzToken: FuzzToken;
@@ -24,6 +30,7 @@ export async function deployContracts() {
     fourthAccount,
     fifthAccount,
     sixthAccount,
+    seventhAccount,
   ] = await ethers.getSigners();
 
   const BeraCub = await ethers.getContractFactory("BeraCub");
@@ -31,7 +38,7 @@ export async function deployContracts() {
   const FuzzToken = await ethers.getContractFactory("FuzzToken");
   const MockHoney = await ethers.getContractFactory("MockHoney");
 
-  beraCub = (await BeraCub.deploy(3000, {
+  beraCub = (await BeraCub.deploy(maxCubSupply, {
     gasLimit: 30000000,
   })) as unknown as BeraCub;
 
@@ -150,6 +157,7 @@ export async function deployContracts() {
     fourthAccount,
     fifthAccount,
     sixthAccount,
+    seventhAccount,
     mockHoney,
   };
 }

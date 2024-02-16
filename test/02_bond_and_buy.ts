@@ -42,14 +42,14 @@ describe("Bera Farm Tests", async function () {
 
   describe("Bond and Buy Tests", async function () {
     it("Allows Purchase of Bera Cubs with Honey at 5 $Honey per Cub", async function () {
-      const expectedTransactionTotal = ethers.parseEther("15");
+      const expectedTransactionTotal = ethers.parseEther("10");
       await expect(
         mockHoney
           .connect(owner)
           .approve(beraFarm.target, expectedTransactionTotal)
       ).to.not.be.reverted;
 
-      const amountOfBeraCubs = "3";
+      const amountOfBeraCubs = "2";
       const buyBeraCubsHoneyTx = await beraFarm
         .connect(owner)
         .buyBeraCubsHoney(amountOfBeraCubs);
@@ -84,15 +84,15 @@ describe("Bera Farm Tests", async function () {
 
       expect(beraCubBalance).to.equal(amountOfBeraCubs);
     });
-    it("Allows purchase of Cubs for 10 $Honey after first set", async function () {
-      const expectedTransactionTotal = ethers.parseEther("20");
+    it("In the event of the minted amount falling within both price brackets the buy function applies the correct total cost to the transaction", async function () {
+      const expectedTransactionTotal = ethers.parseEther("25");
       await expect(
         mockHoney
           .connect(otherAccount)
           .approve(beraFarm.target, expectedTransactionTotal)
       ).to.not.be.reverted;
 
-      const amountOfBeraCubs = "2";
+      const amountOfBeraCubs = "3";
       const buyBeraCubsHoneyTx = await beraFarm
         .connect(otherAccount)
         .buyBeraCubsHoney(amountOfBeraCubs);
