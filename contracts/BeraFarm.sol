@@ -58,9 +58,8 @@ contract BeraFarm is Ownable, ReentrancyGuard {
     //Addresses
     IBERACUB private beraCubNftContract;
     IFUZZTOKEN private fuzz;
-    IERC20 private honey;
+    IERC20 private immutable honey;
     IUniswapV2Pair private fuzzHoneyPair;
-    IUniswapV2Pair private honeyWberaPair;
     IXDEXFactory private factory;
     address public treasury;
 
@@ -74,16 +73,25 @@ contract BeraFarm is Ownable, ReentrancyGuard {
     bool public emissionsClosedOwner = false;
 
     //Rates and Pricing
+
+    //State Variables
     uint256 public dailyInterest;
     uint256 public claimTaxFuzz;
-    uint256 public honeyCostFirstBatch;
-    // IMPORTANT!!!! this is at 3 for testing, up to 2500 before deployment
-    uint256 public maxSupplyFirstBatch = 3;
-    uint256 public honeyCostSecondBatch;
-    uint256 public maxBondCostSoFar;
+    uint256 public maxCompoundCostSoFar = 5 * 1e18;
     uint256 public bondDiscount;
-    uint256 public baseLineCompoundCost;
-    uint256 private immutable beraCubBase;
+
+    //Constants
+    uint256 public constant honeyCostFirstBatch = 5 * 1e18;
+    uint256 public constant honeyCostSecondBatch = 10 * 1e18;
+    uint256 public constant maxAllowedCompoundCost = 25 * 1e18;
+    uint256 public constant baseLineCompoundCost = 5 * 1e18;
+    uint256 private constant beraCubBase = 10 * 1e18;
+
+    //Immutables
+    uint256 public immutable maxSupplyFirstBatch;
+    uint256 public immutable limitBeforeEmissions;
+    uint256 public immutable limitBeforeFullTokenTrading;
+    uint256 public immutable maxSupplyForHoney;
 
     //Array
     address[] public farmersAddresses;
@@ -107,9 +115,12 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         address _pair, //Vera Fuzz pool
         address _treasury, //Wallet to hold fees and taxes
         uint256 _dailyInterest, //as a percentage
-        uint256 _maxBondCostSoFar, //Cost of a Bera Cub in $FUZZ
         uint256 _claimTaxFuzz, //As percentage
         uint256 _bondDiscount, //As percentge
+        uint256 _maxSupplyForHoney, //Max supply of Bera Cubs for sale with $Honey
+        uint256 _maxSupplyFirstBatch, //Max supply of Bera Cubs for sale with $Honey
+        uint256 _limitBeforeEmissions, //Limit of Cubs to be sold befor emissions are turned on
+        uint256 _limitBeforeFullTokenTrading,
         address _factory // Dex factory
     ) {
         fuzz = IFUZZTOKEN(_fuzz);
@@ -117,24 +128,17 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         honey = IERC20(_honey);
         beraCubNftContract = IBERACUB(_beraCubNftContract);
         factory = IXDEXFactory(_factory);
-        baseLineCompoundCost = 5 * 1e18;
-        // IMPORTANT!! these are testnet token addresses and would need to be replaced in the case of a mainnet deployment
-        honeyWberaPair = IUniswapV2Pair(
-            factory.getPair(
-                0x7EeCA4205fF31f947EdBd49195a7A88E6A91161B,
-                0x5806E416dA447b267cEA759358cF22Cc41FAE80F
-            )
-        );
-        claimTaxFuzz = _claimTaxFuzz;
 
+        claimTaxFuzz = _claimTaxFuzz;
+        maxSupplyForHoney = _maxSupplyForHoney;
+        maxSupplyFirstBatch = _maxSupplyFirstBatch;
+        limitBeforeEmissions = _limitBeforeEmissions;
+        limitBeforeFullTokenTrading = _limitBeforeFullTokenTrading;
         treasury = _treasury;
         dailyInterest = _dailyInterest;
-        maxBondCostSoFar = _maxBondCostSoFar.mul(1e18);
-        maxBondCostSoFar = 5 * 1e18;
+
         //baseline interest rate is 10 Units of $FUZZ per day and can be adjsuted with the daily interest rate percentage
-        beraCubBase = SafeMath.mul(10, 1e18);
-        honeyCostFirstBatch = 5 * 1e18;
-        honeyCostSecondBatch = 10 * 1e18;
+
         bondDiscount = _bondDiscount;
     }
 
@@ -147,16 +151,19 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         require(isLive, "Platform is offline");
         require(buyBeraCubsOpenFuzzOwner, "Buy Bera Cubs is closed owner");
         uint256 totalSupply = getTotalBeraCubs();
-        // IMPORTANT!!!! this is at 5 for testing, up to 5000 before deployment
-        require(totalSupply >= 5, "Not enough Minted To Purchase With $Fuzz");
-        require(totalSupply + _amount < 15000, "All Cubs sold out");
+
+        require(
+            totalSupply >= maxSupplyForHoney,
+            "Not enough Minted To Purchase With $Fuzz"
+        );
+
         uint256 beraCubBalance = beraCubNftContract.balanceOf(msg.sender);
         uint256 fuzzOwned = fuzz.balanceOf(msg.sender);
 
         uint256 beraCubsOwned = beraCubBalance + _amount;
         require(beraCubsOwned <= 20, "Max Bera Cubs Owned");
 
-        uint256 transactionTotal = maxBondCostSoFar.mul(_amount);
+        uint256 transactionTotal = maxCompoundCostSoFar.mul(_amount);
         require(fuzzOwned >= transactionTotal, "Not enough $FUZZ");
 
         beraCubNftContract.buyBeraCubs(msg.sender, _amount);
@@ -189,9 +196,8 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         uint256 totalSupplyBeforeAmount = getTotalBeraCubs();
         uint256 totalSupplyPlusAmount = totalSupplyBeforeAmount.add(_amount);
 
-        // IMPORTANT!!!! this is at 6 for testing, up to 5000 before deployment
         require(
-            totalSupplyPlusAmount < 6,
+            totalSupplyPlusAmount < maxSupplyForHoney,
             "Honey Bera Cubs Sold Out buy with Fuzz"
         );
 
@@ -247,17 +253,15 @@ contract BeraFarm is Ownable, ReentrancyGuard {
 
         _updateClaims(msg.sender, _amount);
 
-        // IMPORTANT!!!! this is at 2 for testing, up to 1250 before deployment
         if (
-            totalSupplyPlusAmount >= 2 &&
+            totalSupplyPlusAmount >= limitBeforeEmissions &&
             !emissionsStarted &&
             !emissionsClosedOwner
         ) {
             _openEmissions();
         }
 
-        // IMPORTANT!!!! this is at 5 for testing, up to 5000 before deployment
-        if (totalSupplyPlusAmount >= 5) {
+        if (totalSupplyPlusAmount >= limitBeforeFullTokenTrading) {
             fuzz.openTradingToEveryone();
         }
 
@@ -273,9 +277,9 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         require(isLive, "Platform is offline");
         require(!bondingClosedOwner, "Bonding is closed owner");
         uint256 totalSupply = getTotalBeraCubs();
-        // IMPORTANT!!!! this is at 5 for testing, up to 5000 before deployment
+
         require(
-            totalSupply >= 5,
+            totalSupply >= maxSupplyForHoney,
             "Bonding still closed please purchase with $Honey"
         );
         uint256 beraCubBalance = beraCubNftContract.balanceOf(msg.sender);
@@ -365,7 +369,10 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         farmer.beraCubsCompounded = beraCubsCompounded;
 
         uint256 newCompoundCost = compoundCost + baseLineCompoundCost;
-        _checkAndAdjustFuzzCost(newCompoundCost);
+        if (maxAllowedCompoundCost <= newCompoundCost) {
+            _checkAndAdjustFuzzCost(newCompoundCost);
+        }
+
         _updateClaims(msg.sender, 1);
 
         emit BeraCubCompounded(msg.sender, compoundCost);
@@ -374,20 +381,15 @@ contract BeraFarm is Ownable, ReentrancyGuard {
     function claim() external {
         require(
             farmers[msg.sender].exists,
-            "sender must be registered Bera Cub farmer to claim yields"
-        );
-
-        uint256 beraCubsOwned = beraCubNftContract.balanceOf(msg.sender);
-
-        require(
-            beraCubsOwned > 0,
-            "sender must own at least one Bera Cub to claim yields"
+            "Sender must be registered Bera Cub farmer to claim"
         );
 
         uint256 tax = calculateTax();
         uint256 reward = farmers[msg.sender].claimsFuzz;
         uint256 toBurn = tax;
         uint256 toFarmer = reward.sub(tax);
+
+        require(reward > 0, "No rewards available for claim");
 
         if (reward > 0) {
             farmers[msg.sender].claimsFuzz = 0;
@@ -471,9 +473,9 @@ contract BeraFarm is Ownable, ReentrancyGuard {
     function getBondCost() public view returns (uint256) {
         uint256 tokenPrice = getFuzzPrice();
 
-        uint256 convertedMaxBondCostSoFar = maxBondCostSoFar.div(1e18);
+        uint256 convertedmaxCompoundCostSoFar = maxCompoundCostSoFar.div(1e18);
 
-        uint256 basePrice = convertedMaxBondCostSoFar.mul(tokenPrice);
+        uint256 basePrice = convertedmaxCompoundCostSoFar.mul(tokenPrice);
         uint256 discount = SafeMath.sub(100, bondDiscount);
 
         uint256 bondPrice = basePrice.mul(discount).div(100);
@@ -535,8 +537,8 @@ contract BeraFarm is Ownable, ReentrancyGuard {
     }
 
     function _checkAndAdjustFuzzCost(uint256 currentCost) internal {
-        if (currentCost > maxBondCostSoFar) {
-            maxBondCostSoFar = currentCost;
+        if (currentCost > maxCompoundCostSoFar) {
+            maxCompoundCostSoFar = currentCost;
         }
     }
 

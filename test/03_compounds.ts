@@ -200,5 +200,7 @@ describe("Compounding Tests", async function () {
 
       console.log("Farmer After Compound 2", farmerAfterCompound);
     });
+
+    it("Will not compound at a cost higher than the set limit of 25 $Fuzz", async function () {});
   });
 });

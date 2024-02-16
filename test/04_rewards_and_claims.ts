@@ -188,5 +188,9 @@ describe("Emissions Tax, Rewards and controls Tests", async function () {
         }
       });
     });
+
+    // it("Should start to calculate rewards as soon as a cub is transferred into a wallet", async function () {
+    //   //this test needs to ensure that a users claims status is updated when a cub enters or leaves their wallet to ensure the correct amount of rewards due is always maintained
+    // });
   });
 });

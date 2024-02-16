@@ -6,6 +6,15 @@ import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { deployContracts } from "./testHelpers/deploy-contracts";
 import { BeraCub, BeraFarm, FuzzToken, MockHoney } from "../typechain-types";
 import { setMaxCubSupply } from "./testHelpers/deploy-contracts";
+import {
+  setMaxCubSupply,
+  setMaxSupplyFirstBatch,
+  setLimitBeforeEmissions,
+  setMaxSupplyForHoney,
+  setLimitBeforeFullTokenTrading,
+  setInitialFuzzSupply,
+  setMaxFuzzSupply,
+} from "./testHelpers/deploy-contracts";
 
 describe("Bera Farm Blocker Tests", async function () {
   let beraCub: BeraCub,
@@ -37,6 +46,11 @@ describe("Bera Farm Blocker Tests", async function () {
       beraFarm = fixture.beraFarm;
 
       await beraCub.connect(owner).openMinting();
+
+      setMaxSupplyForHoney(6);
+      setLimitBeforeEmissions(2);
+      setLimitBeforeFullTokenTrading(5);
+      setMaxSupplyFirstBatch(3);
     });
 
     it("Blocks user from buying Bera Cubs when platform is not live", async function () {
@@ -122,6 +136,16 @@ describe("Bera Farm Blocker Tests", async function () {
       ).to.be.revertedWith("Max Bera Cubs Owned");
     });
 
+    it("Blocks user from buying Bera Cubs with Fuzz if $FUZZ purchases are not open yet", async function () {});
+
+    it("Allows the owner to close $FUZZ purchases", async function () {});
+
+    it("Blocks the purchase of Cubs with $FUZZ if the owner has closed sales", async function () {});
+
+    it("Allows the owner to open $FUZZ purchases", async function () {});
+
+    it("Blocks the user from purchasing with $FUZZ if they don't have enough $FUZZ yet", async function () {});
+
     it("owner from awarding a cub if the user has more than the max amount", async function () {
       await expect(
         beraFarm.connect(owner).awardBeraCubs(owner.address, 16)
@@ -136,5 +160,11 @@ describe("Bera Farm Blocker Tests", async function () {
         beraFarm.connect(owner).awardBeraCubs(fifthAccount.address, 2)
       ).to.be.revertedWith("All Bera Cubs Minted :(");
     });
+
+    it("Blocks user from compounding if they don't have enough $Fuzz", async function () {});
+
+    it("Blocks user from compounding if they have hit the limit per wallet", async function () {});
+
+    it("reverts claim if the farmer doesn't exist", async function () {});
   });
 });

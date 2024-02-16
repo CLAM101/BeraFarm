@@ -2,14 +2,45 @@ import "@nomicfoundation/hardhat-chai-matchers";
 import { ethers } from "hardhat";
 import { BeraCub, FuzzToken, BeraFarm, MockHoney } from "../../typechain-types";
 import { Helpers } from "./helpers";
-import { wBeraABI } from "./ABI/wbera-abi";
 import { bexABI } from "./ABI/bex-abi";
 import { ERC20ABI } from "./ABI/ERC20-abi";
 
+// these are defaults that will be set when deploying to testnet and mainnet
 export let maxCubSupply = 15000;
+export let maxSupplyFirstBatch = 5000;
+export let limitBeforeEmissions = 1250;
+export let maxSupplyForHoney = 5000;
+export let limitBeforeFullTokenTrading = 5000;
+export let initialFuzzSupply = ethers.parseEther("3000000");
+export let maxFuzzSupply = ethers.parseEther("10000000");
 
-export async function setMaxCubSupply(newSupply: number) {
+//Use these to set limits for testing purposes
+export function setMaxCubSupply(newSupply: number) {
   maxCubSupply = newSupply;
+}
+
+export function setMaxSupplyFirstBatch(newSupply: number) {
+  maxSupplyFirstBatch = newSupply;
+}
+
+export function setLimitBeforeEmissions(newLimit: number) {
+  limitBeforeEmissions = newLimit;
+}
+
+export function setMaxSupplyForHoney(newSupply: number) {
+  maxSupplyForHoney = newSupply;
+}
+
+export function setLimitBeforeFullTokenTrading(newLimit: number) {
+  limitBeforeFullTokenTrading = newLimit;
+}
+
+export function setInitialFuzzSupply(newSupply: number) {
+  initialFuzzSupply = ethers.parseEther(newSupply.toString());
+}
+
+export function setMaxFuzzSupply(newSupply: number) {
+  maxFuzzSupply = ethers.parseEther(newSupply.toString());
 }
 
 export async function deployContracts() {
@@ -63,8 +94,8 @@ export async function deployContracts() {
   console.log("Mock $Honey Deployed At:", mockHoney.target);
 
   fuzzToken = (await FuzzToken.deploy(
-    ethers.parseEther("3000000"),
-    ethers.parseEther("10000000"),
+    initialFuzzSupply,
+    maxFuzzSupply,
     otherAccount.address,
     mockHoney.target,
     beraCub.target
@@ -129,9 +160,12 @@ export async function deployContracts() {
     pair,
     sixthAccount.address,
     60,
-    5,
-    8,
     15,
+    10,
+    maxSupplyForHoney,
+    maxSupplyFirstBatch,
+    limitBeforeEmissions,
+    limitBeforeFullTokenTrading,
     factoryAddress,
     {
       gasLimit: 30000000,

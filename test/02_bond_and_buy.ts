@@ -6,6 +6,15 @@ import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { BlockTag, Log } from "@ethersproject/abstract-provider";
 import { deployContracts } from "./testHelpers/deploy-contracts";
 import { BeraCub, BeraFarm, FuzzToken, MockHoney } from "../typechain-types";
+import {
+  setMaxCubSupply,
+  setMaxSupplyFirstBatch,
+  setLimitBeforeEmissions,
+  setMaxSupplyForHoney,
+  setLimitBeforeFullTokenTrading,
+  setInitialFuzzSupply,
+  setMaxFuzzSupply,
+} from "./testHelpers/deploy-contracts";
 
 describe("Bera Farm Tests", async function () {
   let beraCub: BeraCub,
@@ -33,6 +42,10 @@ describe("Bera Farm Tests", async function () {
     beraFarm = fixture.beraFarm;
 
     // open platform for testing
+    setMaxSupplyForHoney(6);
+    setLimitBeforeEmissions(2);
+    setLimitBeforeFullTokenTrading(5);
+    setMaxSupplyFirstBatch(3);
 
     await beraFarm.connect(owner).setPlatformState(true);
     await beraFarm.connect(owner).openBuyBeraCubsHoney();
