@@ -6,7 +6,15 @@ import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { BlockTag, Log } from "@ethersproject/abstract-provider";
 import { deployContracts } from "./testHelpers/deploy-contracts";
 import { BeraCub, BeraFarm, FuzzToken, MockHoney } from "../typechain-types";
-
+import {
+  setMaxCubSupply,
+  setMaxSupplyFirstBatch,
+  setLimitBeforeEmissions,
+  setMaxSupplyForHoney,
+  setLimitBeforeFullTokenTrading,
+  setInitialFuzzSupply,
+  setMaxFuzzSupply,
+} from "./testHelpers/deploy-contracts";
 describe("Compounding Tests", async function () {
   let beraCub: BeraCub,
     beraFarm: BeraFarm,
@@ -20,6 +28,10 @@ describe("Compounding Tests", async function () {
     sixthAccount: HardhatEthersSigner;
 
   before(async function () {
+    setMaxSupplyForHoney(5);
+    setLimitBeforeEmissions(2);
+    setLimitBeforeFullTokenTrading(5);
+    setMaxSupplyFirstBatch(3);
     const fixture = await loadFixture(deployContracts);
     owner = fixture.owner;
     mockHoney = fixture.mockHoney;
@@ -101,11 +113,14 @@ describe("Compounding Tests", async function () {
 
       const expectedCompoundCost1 = ethers.parseEther("5");
 
-      let maxBondCostSoFar = await beraFarm.maxBondCostSoFar();
+      let maxCompoundCostSoFar = await beraFarm.maxCompoundCostSoFar();
 
-      console.log("Max Bond Cost So Far", ethers.formatEther(maxBondCostSoFar));
+      console.log(
+        "Max Bond Cost So Far",
+        ethers.formatEther(maxCompoundCostSoFar)
+      );
 
-      expect(maxBondCostSoFar).to.equal(expectedCompoundCost1);
+      expect(maxCompoundCostSoFar).to.equal(expectedCompoundCost1);
 
       const compoundTx = await beraFarm.connect(owner).compoundBeraCubs();
 
@@ -134,14 +149,14 @@ describe("Compounding Tests", async function () {
 
       expect(beraCubBalanceAfterCompound).to.equal(ethers.formatUnits(4, 0));
 
-      maxBondCostSoFar = await beraFarm.maxBondCostSoFar();
+      maxCompoundCostSoFar = await beraFarm.maxCompoundCostSoFar();
 
       console.log(
         "Max Bond Cost So Far after 1 compound",
-        ethers.formatEther(maxBondCostSoFar)
+        ethers.formatEther(maxCompoundCostSoFar)
       );
 
-      expect(maxBondCostSoFar).to.equal(ethers.parseEther("10"));
+      expect(maxCompoundCostSoFar).to.equal(ethers.parseEther("10"));
 
       const farmerAfterCompound = await beraFarm
         .connect(owner)
@@ -153,11 +168,14 @@ describe("Compounding Tests", async function () {
     it("Effectively Compounds Cubs on a 10 fuzz interval", async function () {
       const expectedCompoundCost2 = ethers.parseEther("10");
 
-      let maxBondCostSoFar = await beraFarm.maxBondCostSoFar();
+      let maxCompoundCostSoFar = await beraFarm.maxCompoundCostSoFar();
 
-      console.log("Max Bond Cost So Far", ethers.formatEther(maxBondCostSoFar));
+      console.log(
+        "Max Bond Cost So Far",
+        ethers.formatEther(maxCompoundCostSoFar)
+      );
 
-      expect(maxBondCostSoFar).to.equal(expectedCompoundCost2);
+      expect(maxCompoundCostSoFar).to.equal(expectedCompoundCost2);
 
       const compoundTx = await beraFarm.connect(owner).compoundBeraCubs();
 
@@ -185,14 +203,14 @@ describe("Compounding Tests", async function () {
 
       expect(beraCubBalanceAfterCompound).to.equal(ethers.formatUnits(5, 0));
 
-      maxBondCostSoFar = await beraFarm.maxBondCostSoFar();
+      maxCompoundCostSoFar = await beraFarm.maxCompoundCostSoFar();
 
       console.log(
         "Max Bond Cost So Far after 2 compounds",
-        ethers.formatEther(maxBondCostSoFar)
+        ethers.formatEther(maxCompoundCostSoFar)
       );
 
-      expect(maxBondCostSoFar).to.equal(ethers.parseEther("15"));
+      expect(maxCompoundCostSoFar).to.equal(ethers.parseEther("15"));
 
       const farmerAfterCompound = await beraFarm
         .connect(owner)

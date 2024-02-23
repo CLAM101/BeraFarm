@@ -75,7 +75,7 @@ export async function deployContracts() {
 
   await beraCub.waitForDeployment();
 
-  console.log("BetterChicken Deployed At:", beraCub.target);
+  console.log("Bera Cub NFT Contract Deployed At:", beraCub.target);
 
   const mintToAddresses = [
     owner.address,
@@ -91,7 +91,7 @@ export async function deployContracts() {
   )) as unknown as MockHoney;
   await mockHoney.waitForDeployment();
 
-  console.log("Mock $Honey Deployed At:", mockHoney.target);
+  console.log("Mock $Honey contract Deployed At:", mockHoney.target);
 
   fuzzToken = (await FuzzToken.deploy(
     initialFuzzSupply,
@@ -106,7 +106,7 @@ export async function deployContracts() {
 
   const LPContract = new ethers.Contract(pair, ERC20ABI, owner);
 
-  console.log("$Fuzz Deployed At:", fuzzToken.target);
+  console.log("$FUZZ token contract Deployed At:", fuzzToken.target);
 
   await fuzzToken
     .connect(owner)
@@ -171,6 +171,8 @@ export async function deployContracts() {
       gasLimit: 30000000,
     }
   )) as unknown as BeraFarm;
+
+  await beraCub.addBeraFarmContract(beraFarm.target);
 
   await beraFarm.waitForDeployment();
 

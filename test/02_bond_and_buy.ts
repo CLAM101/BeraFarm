@@ -29,6 +29,10 @@ describe("Bera Farm Tests", async function () {
     sixthAccount: HardhatEthersSigner;
 
   before(async function () {
+    setMaxSupplyForHoney(5);
+    setLimitBeforeEmissions(2);
+    setLimitBeforeFullTokenTrading(5);
+    setMaxSupplyFirstBatch(3);
     const fixture = await loadFixture(deployContracts);
     owner = fixture.owner;
     mockHoney = fixture.mockHoney;
@@ -40,12 +44,6 @@ describe("Bera Farm Tests", async function () {
     beraCub = fixture.beraCub;
     fuzzToken = fixture.fuzzToken;
     beraFarm = fixture.beraFarm;
-
-    // open platform for testing
-    setMaxSupplyForHoney(6);
-    setLimitBeforeEmissions(2);
-    setLimitBeforeFullTokenTrading(5);
-    setMaxSupplyFirstBatch(3);
 
     await beraFarm.connect(owner).setPlatformState(true);
     await beraFarm.connect(owner).openBuyBeraCubsHoney();
@@ -98,14 +96,14 @@ describe("Bera Farm Tests", async function () {
       expect(beraCubBalance).to.equal(amountOfBeraCubs);
     });
     it("In the event of the minted amount falling within both price brackets the buy function applies the correct total cost to the transaction", async function () {
-      const expectedTransactionTotal = ethers.parseEther("25");
+      const expectedTransactionTotal = ethers.parseEther("35");
       await expect(
         mockHoney
           .connect(otherAccount)
           .approve(beraFarm.target, expectedTransactionTotal)
       ).to.not.be.reverted;
 
-      const amountOfBeraCubs = "3";
+      const amountOfBeraCubs = "4";
       const buyBeraCubsHoneyTx = await beraFarm
         .connect(otherAccount)
         .buyBeraCubsHoney(amountOfBeraCubs);
@@ -145,14 +143,14 @@ describe("Bera Farm Tests", async function () {
       const bondCost = await beraFarm.getBondCost();
 
       //based on Bera Price of 1000 and liquidity of 1 000 000 Fuzz and 200 Bera added to pool
-      const expectedBondCost = ethers.parseEther("0.17");
+      const expectedBondCost = ethers.parseEther("0.18");
 
       console.log("Bond Cost In Test", ethers.formatEther(bondCost) + "$HONEY");
 
       expect(bondCost).to.equal(expectedBondCost);
 
       // expected cost of bonding two BeraCubs with Honey
-      const expectedTotalCost = ethers.parseEther("0.34");
+      const expectedTotalCost = ethers.parseEther("0.36");
 
       await expect(
         mockHoney
@@ -192,7 +190,7 @@ describe("Bera Farm Tests", async function () {
 
       console.log("Treasury Balance", ethers.formatUnits(treasuryBalance, 0));
 
-      expect(treasuryBalance).to.equal(ethers.parseEther("35.34"));
+      expect(treasuryBalance).to.equal(ethers.parseEther("45.36"));
 
       console.log("Bera Cub Balance", ethers.formatUnits(beraCubBalance, 0));
 
@@ -210,7 +208,7 @@ describe("Bera Farm Tests", async function () {
 
     it("Allows purchase of Cubs for Fuzz at the latest compound price and after all Honey cubs minted", async function () {
       const currentPricePerCub =
-        (await beraFarm.maxBondCostSoFar()) as unknown as number;
+        (await beraFarm.maxCompoundCostSoFar()) as unknown as number;
 
       const amountOfBeraCubs = "1";
 

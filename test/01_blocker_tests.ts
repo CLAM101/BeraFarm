@@ -5,7 +5,6 @@ import { ethers } from "hardhat";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { deployContracts } from "./testHelpers/deploy-contracts";
 import { BeraCub, BeraFarm, FuzzToken, MockHoney } from "../typechain-types";
-import { setMaxCubSupply } from "./testHelpers/deploy-contracts";
 import {
   setMaxCubSupply,
   setMaxSupplyFirstBatch,
@@ -31,7 +30,11 @@ describe("Bera Farm Blocker Tests", async function () {
 
   describe("Blocker Tests", async function () {
     before(async function () {
-      setMaxCubSupply(41);
+      setMaxCubSupply(62);
+      setMaxSupplyForHoney(27);
+      setLimitBeforeEmissions(2);
+      setLimitBeforeFullTokenTrading(5);
+      setMaxSupplyFirstBatch(3);
       const fixture = await loadFixture(deployContracts);
       owner = fixture.owner;
       mockHoney = fixture.mockHoney;
@@ -46,11 +49,7 @@ describe("Bera Farm Blocker Tests", async function () {
       beraFarm = fixture.beraFarm;
 
       await beraCub.connect(owner).openMinting();
-
-      setMaxSupplyForHoney(6);
-      setLimitBeforeEmissions(2);
-      setLimitBeforeFullTokenTrading(5);
-      setMaxSupplyFirstBatch(3);
+      await fuzzToken.connect(owner).enableTrading();
     });
 
     it("Blocks user from buying Bera Cubs when platform is not live", async function () {
@@ -93,22 +92,46 @@ describe("Bera Farm Blocker Tests", async function () {
       );
     });
 
+    it("Blocks user from buying Bera Cubs with Fuzz if $Honey cubs are not sold out yet", async function () {
+      await expect(beraFarm.buyBeraCubsFuzz(2)).to.be.revertedWith(
+        "Not enough Minted To Purchase With $Fuzz"
+      );
+    });
+
     it("Allows User to Buy Cubs for Honey after opening", async function () {
       await expect(
         mockHoney
           .connect(owner)
-          .approve(beraFarm.target, ethers.parseEther("35"))
+          .approve(beraFarm.target, ethers.parseEther("55"))
       ).to.not.be.reverted;
-      await expect(beraFarm.connect(owner).buyBeraCubsHoney(5)).to.not.be
+      await expect(beraFarm.connect(owner).buyBeraCubsHoney(6)).to.not.be
         .reverted;
+    });
+
+    it("Blocks the user from buying with $Honey if they have hit the max ownership allowance", async function () {
+      await expect(
+        mockHoney
+          .connect(seventhAccount)
+          .approve(beraFarm.target, ethers.parseEther("200"))
+      ).to.not.be.reverted;
+
+      await expect(
+        beraFarm.connect(owner).awardBeraCubs(seventhAccount.address, 20)
+      ).to.not.be.reverted;
+
+      await expect(
+        beraFarm.connect(seventhAccount).buyBeraCubsHoney(1)
+      ).to.be.revertedWith("Max Bera Cubs Owned");
     });
 
     it("Blocks user from Buying Bera Cubs with Honey if they are sold out", async function () {
       await expect(
         mockHoney
           .connect(owner)
-          .approve(beraFarm.target, ethers.parseEther("35"))
+          .approve(beraFarm.target, ethers.parseEther("400"))
       ).to.not.be.reverted;
+      await expect(beraFarm.connect(owner).buyBeraCubsHoney(20)).to.not.be
+        .reverted;
       await expect(
         beraFarm.connect(owner).buyBeraCubsHoney(2)
       ).to.be.revertedWith("Honey Bera Cubs Sold Out buy with Fuzz");
@@ -136,15 +159,34 @@ describe("Bera Farm Blocker Tests", async function () {
       ).to.be.revertedWith("Max Bera Cubs Owned");
     });
 
-    it("Blocks user from buying Bera Cubs with Fuzz if $FUZZ purchases are not open yet", async function () {});
+    it("Allows the owner to close $FUZZ purchases and prevents purchase once closed", async function () {
+      await expect(beraFarm.connect(owner).closeFuzzSaleOwner()).to.not.be
+        .reverted;
 
-    it("Allows the owner to close $FUZZ purchases", async function () {});
+      await expect(
+        beraFarm.connect(owner).buyBeraCubsFuzz(2)
+      ).to.be.revertedWith("Buy Bera Cubs is closed owner");
+    });
 
-    it("Blocks the purchase of Cubs with $FUZZ if the owner has closed sales", async function () {});
+    it("Allows the owner to open $FUZZ purchases and allows a purchase to take place", async function () {
+      await expect(beraFarm.connect(owner).openFuzzSaleOwner()).to.not.be
+        .reverted;
 
-    it("Allows the owner to open $FUZZ purchases", async function () {});
+      await expect(
+        fuzzToken
+          .connect(owner)
+          .approve(beraFarm.target, ethers.parseEther("35"))
+      ).to.not.be.reverted;
 
-    it("Blocks the user from purchasing with $FUZZ if they don't have enough $FUZZ yet", async function () {});
+      await expect(beraFarm.connect(owner).buyBeraCubsFuzz(2)).to.not.be
+        .reverted;
+    });
+
+    it("Blocks the user from purchasing with $FUZZ if they don't have enough $FUZZ", async function () {
+      await expect(
+        beraFarm.connect(otherAccount).buyBeraCubsFuzz(1)
+      ).to.be.revertedWith("Not enough $FUZZ");
+    });
 
     it("owner from awarding a cub if the user has more than the max amount", async function () {
       await expect(
@@ -152,19 +194,28 @@ describe("Bera Farm Blocker Tests", async function () {
       ).to.be.revertedWith("Max Bera Cubs Owned");
     });
 
+    it("reverts claim if the farmer doesn't exist", async function () {
+      await expect(beraFarm.connect(sixthAccount).claim()).to.be.revertedWith(
+        "Sender must be registered Bera Cub farmer to claim"
+      );
+    });
+
     it("Blocks the purchase of Cubs once they are completely sold out", async function () {
-      await expect(beraFarm.connect(owner).awardBeraCubs(owner.address, 15)).to
-        .not.be.reverted;
+      await expect(
+        beraFarm.connect(owner).awardBeraCubs(sixthAccount.address, 13)
+      ).to.not.be.reverted;
 
       await expect(
         beraFarm.connect(owner).awardBeraCubs(fifthAccount.address, 2)
       ).to.be.revertedWith("All Bera Cubs Minted :(");
     });
 
-    it("Blocks user from compounding if they don't have enough $Fuzz", async function () {});
+    it("Blocks user from compounding if they don't have enough $Fuzz", async function () {
+      await expect(
+        beraFarm.connect(owner).compoundBeraCubs()
+      ).to.be.revertedWith("Not enough pending $FUZZ to compound");
+    });
 
     it("Blocks user from compounding if they have hit the limit per wallet", async function () {});
-
-    it("reverts claim if the farmer doesn't exist", async function () {});
   });
 });

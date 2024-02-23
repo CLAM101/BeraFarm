@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./Interfaces/IBERAFARM.sol";
 import "base64-sol/base64.sol";
 import "hardhat/console.sol";
 
@@ -10,7 +11,9 @@ contract BeraCub is Ownable, ERC721URIStorage {
     uint256 public tokenCounter;
     uint256 public maxSupply;
     bool public mintingOpen;
+    address public beraFarmContract;
     mapping(address => bool) private isController;
+    IBERAFARM private beraFarm;
 
     event MintedBeraCub(address sender, uint256 tokenId);
     event MintingOpened(bool mintingOpen);
@@ -39,6 +42,11 @@ contract BeraCub is Ownable, ERC721URIStorage {
 
             emit MintedBeraCub(_reciever, tokenCounter);
         }
+    }
+
+    function addBeraFarmContract(address _beraFarmContract) public onlyOwner {
+        beraFarmContract = _beraFarmContract;
+        beraFarm = IBERAFARM(beraFarmContract);
     }
 
     modifier onlyController() {
@@ -70,6 +78,16 @@ contract BeraCub is Ownable, ERC721URIStorage {
         emit MintingPaused(mintingOpen);
     }
 
+    function _afterTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal virtual override {
+        super._afterTokenTransfer(from, to, amount);
+
+        beraFarm.updateClaimsOnTokenTransfer(from, to);
+    }
+
     function formatTokenURI() public pure returns (string memory) {
         string memory baseURL = "data:application/json;base64,";
 
@@ -82,7 +100,7 @@ contract BeraCub is Ownable, ERC721URIStorage {
                             abi.encodePacked(
                                 '{"name":"',
                                 "Bera Cub",
-                                '", "description":"A Wild Bera Cub Shedding his Fuzz", "attributes":"", "image":"',
+                                '", "description":"A Wild Bera Cub Shedding its $FUZZ", "attributes":"", "image":"',
                                 "https://ivory-fierce-cat-639.mypinata.cloud/ipfs/Qmek4YeBuANk8ynpfX1Vb8xwnwRtSYfdGc2EFfKZSaT7V5?_gl=1*1ipzxby*_ga*NjMwOTM0NDU1LjE3MDE5NzI1NjU.*_ga_5RMPXG14TE*MTcwMjQwMjc5Mi41LjEuMTcwMjQwMzI0NS4zNi4wLjA.",
                                 '"}'
                             )

@@ -109,7 +109,7 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
             // Require that a receiving wallet will not hold more than 1% of supply after a transfer whilst hibernation is in effect
             require(
                 balanceOf(to) <= totalSupply() / 100,
-                "Just getting warmed up, limit of 1% of Fuzz can be Traded until Bera Hibernation is complete!"
+                "Just getting warmed up, limit of 1% of $FUZZ can be Traded until Bera Hibernation is complete!"
             );
         }
     }

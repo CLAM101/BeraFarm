@@ -6,6 +6,15 @@ import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { BlockTag, Log } from "@ethersproject/abstract-provider";
 import { deployContracts } from "./testHelpers/deploy-contracts";
 import { BeraCub, BeraFarm, FuzzToken, MockHoney } from "../typechain-types";
+import {
+  setMaxCubSupply,
+  setMaxSupplyFirstBatch,
+  setLimitBeforeEmissions,
+  setMaxSupplyForHoney,
+  setLimitBeforeFullTokenTrading,
+  setInitialFuzzSupply,
+  setMaxFuzzSupply,
+} from "./testHelpers/deploy-contracts";
 
 describe("Emissions Tax, Rewards and controls Tests", async function () {
   let beraCub: BeraCub,
@@ -20,6 +29,7 @@ describe("Emissions Tax, Rewards and controls Tests", async function () {
     sixthAccount: HardhatEthersSigner;
 
   before(async function () {
+    setLimitBeforeEmissions(1);
     const fixture = await loadFixture(deployContracts);
     owner = fixture.owner;
     mockHoney = fixture.mockHoney;
@@ -189,8 +199,38 @@ describe("Emissions Tax, Rewards and controls Tests", async function () {
       });
     });
 
-    // it("Should start to calculate rewards as soon as a cub is transferred into a wallet", async function () {
-    //   //this test needs to ensure that a users claims status is updated when a cub enters or leaves their wallet to ensure the correct amount of rewards due is always maintained
-    // });
+    it("Should start to calculate rewards as soon as a cub is transferred into a wallet", async function () {
+      //this test needs to ensure that a users claims status is updated when a cub enters or leaves their wallet to ensure the correct amount of rewards due is always maintained
+
+      await expect(
+        beraFarm.connect(owner).awardBeraCubs(fourthAccount.address, 1)
+      ).to.not.be.reverted;
+
+      await expect(
+        beraCub
+          .connect(fourthAccount)
+          .setApprovalForAll(fifthAccount.address, true)
+      ).to.not.be.reverted;
+
+      await expect(
+        beraCub
+          .connect(fourthAccount)
+          .transferFrom(fourthAccount.address, fifthAccount.address, 4)
+      ).to.not.be.reverted;
+
+      const stakingDuration = 24 * 3600;
+
+      await ethers.provider.send("evm_increaseTime", [stakingDuration]);
+      await ethers.provider.send("evm_mine");
+
+      const totalClaimable = await beraFarm.getTotalClaimable(
+        fifthAccount.address
+      );
+
+      console.log(
+        "Total Claimable after 24 hours on 5 Cubs",
+        ethers.formatEther(totalClaimable)
+      );
+    });
   });
 });
