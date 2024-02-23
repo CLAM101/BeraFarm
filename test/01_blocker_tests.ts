@@ -130,7 +130,7 @@ describe("Bera Farm Blocker Tests", async function () {
           .connect(owner)
           .approve(beraFarm.target, ethers.parseEther("400"))
       ).to.not.be.reverted;
-      await expect(beraFarm.connect(owner).buyBeraCubsHoney(20)).to.not.be
+      await expect(beraFarm.connect(owner).buyBeraCubsHoney(1)).to.not.be
         .reverted;
       await expect(
         beraFarm.connect(owner).buyBeraCubsHoney(2)
@@ -139,7 +139,12 @@ describe("Bera Farm Blocker Tests", async function () {
 
     it("Blocks User from Bonding Cubs if they don't have enough $Honey", async function () {
       await expect(
-        beraFarm.connect(seventhAccount).bondBeraCubs(1)
+        mockHoney
+          .connect(thirdAccount)
+          .approve(beraFarm.target, ethers.parseEther("400"))
+      ).to.not.be.reverted;
+      await expect(
+        beraFarm.connect(thirdAccount).bondBeraCubs(1)
       ).to.be.revertedWith("Not enough $HONEY");
     });
 

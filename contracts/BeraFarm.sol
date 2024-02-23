@@ -188,7 +188,7 @@ contract BeraFarm is Ownable, ReentrancyGuard {
 
         console.log(
             "Total Supply in buy function",
-            totalSupplyBeforeAmount,
+            totalSupplyPlusAmount,
             "Max Supply",
             maxSupplyForHoney
         );
