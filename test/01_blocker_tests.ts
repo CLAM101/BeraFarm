@@ -26,11 +26,12 @@ describe("Bera Farm Blocker Tests", async function () {
     fourthAccount: HardhatEthersSigner,
     fifthAccount: HardhatEthersSigner,
     seventhAccount: HardhatEthersSigner,
-    sixthAccount: HardhatEthersSigner;
+    sixthAccount: HardhatEthersSigner,
+    eighthAccount: HardhatEthersSigner;
 
   describe("Blocker Tests", async function () {
     before(async function () {
-      setMaxCubSupply(62);
+      setMaxCubSupply(71);
       setMaxSupplyForHoney(27);
       setLimitBeforeEmissions(2);
       setLimitBeforeFullTokenTrading(5);
@@ -44,6 +45,7 @@ describe("Bera Farm Blocker Tests", async function () {
       fifthAccount = fixture.fifthAccount;
       sixthAccount = fixture.sixthAccount;
       seventhAccount = fixture.seventhAccount;
+      eighthAccount = fixture.eighthAccount;
       beraCub = fixture.beraCub;
       fuzzToken = fixture.fuzzToken;
       beraFarm = fixture.beraFarm;
@@ -78,6 +80,12 @@ describe("Bera Farm Blocker Tests", async function () {
     it("Allows Owner to Open bera Cub trading for Honey", async function () {
       await expect(beraFarm.connect(owner).openBuyBeraCubsHoney()).to.not.be
         .reverted;
+    });
+
+    it("Blocks compound attempt if emissions have not started", async function () {
+      await expect(
+        beraFarm.connect(owner).compoundBeraCubs()
+      ).to.be.revertedWith("Compound not possible emissions not started");
     });
 
     it("Blocks User from minting Cubs if they don't have enough $Honey", async function () {
@@ -140,11 +148,11 @@ describe("Bera Farm Blocker Tests", async function () {
     it("Blocks User from Bonding Cubs if they don't have enough $Honey", async function () {
       await expect(
         mockHoney
-          .connect(thirdAccount)
+          .connect(eighthAccount)
           .approve(beraFarm.target, ethers.parseEther("400"))
       ).to.not.be.reverted;
       await expect(
-        beraFarm.connect(thirdAccount).bondBeraCubs(1)
+        beraFarm.connect(eighthAccount).bondBeraCubs(1)
       ).to.be.revertedWith("Not enough $HONEY");
     });
 
@@ -199,20 +207,10 @@ describe("Bera Farm Blocker Tests", async function () {
       ).to.be.revertedWith("Max Bera Cubs Owned");
     });
 
-    it("reverts claim if the farmer doesn't exist", async function () {
+    it("Reverts claim if the farmer doesn't exist", async function () {
       await expect(beraFarm.connect(sixthAccount).claim()).to.be.revertedWith(
         "Sender must be registered Bera Cub farmer to claim"
       );
-    });
-
-    it("Blocks the purchase of Cubs once they are completely sold out", async function () {
-      await expect(
-        beraFarm.connect(owner).awardBeraCubs(sixthAccount.address, 13)
-      ).to.not.be.reverted;
-
-      await expect(
-        beraFarm.connect(owner).awardBeraCubs(fifthAccount.address, 2)
-      ).to.be.revertedWith("All Bera Cubs Minted :(");
     });
 
     it("Blocks user from compounding if they don't have enough $Fuzz", async function () {
@@ -221,6 +219,29 @@ describe("Bera Farm Blocker Tests", async function () {
       ).to.be.revertedWith("Not enough pending $FUZZ to compound");
     });
 
-    it("Blocks user from compounding if they have hit the limit per wallet", async function () {});
+    it("Blocks user from compounding if they have hit the limit per wallet", async function () {
+      await expect(
+        beraFarm.connect(owner).awardBeraCubs(eighthAccount.address, 20)
+      ).to.not.be.reverted;
+
+      const stakingDuration = 24 * 3600;
+
+      await ethers.provider.send("evm_increaseTime", [stakingDuration]);
+      await ethers.provider.send("evm_mine");
+
+      await expect(
+        beraFarm.connect(eighthAccount).compoundBeraCubs()
+      ).to.be.revertedWith("Max Bera Cubs Owned");
+    });
+
+    it("Blocks the purchase of Cubs once they are completely sold out", async function () {
+      const currentTotalSupply = await beraCub.totalSupply();
+
+      console.log("Total Supply", ethers.formatUnits(currentTotalSupply, 0));
+
+      await expect(
+        beraFarm.connect(owner).awardBeraCubs(fifthAccount.address, 2)
+      ).to.be.revertedWith("All Bera Cubs Minted :(");
+    });
   });
 });

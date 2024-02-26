@@ -16,6 +16,19 @@ import {
   setMaxFuzzSupply,
 } from "./testHelpers/deploy-contracts";
 
+async function deployWithConfig() {
+  setMaxSupplyForHoney(6);
+  setLimitBeforeEmissions(2);
+  setLimitBeforeFullTokenTrading(5);
+  setMaxSupplyFirstBatch(3);
+
+  return deployContracts();
+}
+
+const fixture = async () => {
+  return deployWithConfig();
+};
+
 describe("Bera Farm Tests", async function () {
   let beraCub: BeraCub,
     beraFarm: BeraFarm,
@@ -29,21 +42,17 @@ describe("Bera Farm Tests", async function () {
     sixthAccount: HardhatEthersSigner;
 
   before(async function () {
-    setMaxSupplyForHoney(5);
-    setLimitBeforeEmissions(2);
-    setLimitBeforeFullTokenTrading(5);
-    setMaxSupplyFirstBatch(3);
-    const fixture = await loadFixture(deployContracts);
-    owner = fixture.owner;
-    mockHoney = fixture.mockHoney;
-    otherAccount = fixture.otherAccount;
-    thirdAccount = fixture.thirdAccount;
-    fourthAccount = fixture.fourthAccount;
-    fifthAccount = fixture.fifthAccount;
-    sixthAccount = fixture.sixthAccount;
-    beraCub = fixture.beraCub;
-    fuzzToken = fixture.fuzzToken;
-    beraFarm = fixture.beraFarm;
+    const loadedFixture = await loadFixture(fixture);
+    owner = loadedFixture.owner;
+    mockHoney = loadedFixture.mockHoney;
+    otherAccount = loadedFixture.otherAccount;
+    thirdAccount = loadedFixture.thirdAccount;
+    fourthAccount = loadedFixture.fourthAccount;
+    fifthAccount = loadedFixture.fifthAccount;
+    sixthAccount = loadedFixture.sixthAccount;
+    beraCub = loadedFixture.beraCub;
+    fuzzToken = loadedFixture.fuzzToken;
+    beraFarm = loadedFixture.beraFarm;
 
     await beraFarm.connect(owner).setPlatformState(true);
     await beraFarm.connect(owner).openBuyBeraCubsHoney();

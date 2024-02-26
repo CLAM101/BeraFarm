@@ -62,6 +62,7 @@ export async function deployContracts() {
     fifthAccount,
     sixthAccount,
     seventhAccount,
+    eighthAccount,
   ] = await ethers.getSigners();
 
   const BeraCub = await ethers.getContractFactory("BeraCub");
@@ -194,6 +195,7 @@ export async function deployContracts() {
     fifthAccount,
     sixthAccount,
     seventhAccount,
+    eighthAccount,
     mockHoney,
   };
 }

@@ -326,6 +326,10 @@ contract BeraFarm is Ownable, ReentrancyGuard {
      * @dev Compounds 1 Cup per call, we dont use setOrUpdate farmer here as changes are quite specific to a compound
      */
     function compoundBeraCubs() public nonReentrant {
+        require(
+            emissionsStarted,
+            "Compound not possible emissions not started"
+        );
         uint256 pendingClaims = getTotalClaimable(msg.sender);
 
         Farmer storage farmer = farmers[msg.sender];
