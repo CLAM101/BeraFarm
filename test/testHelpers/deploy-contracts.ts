@@ -13,10 +13,15 @@ export let maxSupplyForHoney = 5000;
 export let limitBeforeFullTokenTrading = 5000;
 export let initialFuzzSupply = ethers.parseEther("3000000");
 export let maxFuzzSupply = ethers.parseEther("10000000");
+export let snapShotId: string;
 
 //Use these to set limits for testing purposes
 export function setMaxCubSupply(newSupply: number) {
   maxCubSupply = newSupply;
+}
+
+export function setSnapShotId(newSnapShotId: string) {
+  snapShotId = newSnapShotId;
 }
 
 export function setMaxSupplyFirstBatch(newSupply: number) {

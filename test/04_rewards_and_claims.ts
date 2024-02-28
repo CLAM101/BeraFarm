@@ -14,6 +14,8 @@ import {
   setLimitBeforeFullTokenTrading,
   setInitialFuzzSupply,
   setMaxFuzzSupply,
+  snapShotId,
+  setSnapShotId,
 } from "./testHelpers/deploy-contracts";
 
 describe("Emissions Tax, Rewards and controls Tests", async function () {
@@ -29,6 +31,9 @@ describe("Emissions Tax, Rewards and controls Tests", async function () {
     sixthAccount: HardhatEthersSigner;
 
   before(async function () {
+    await ethers.provider.send("evm_revert", [snapShotId]);
+    const newId = await ethers.provider.send("evm_snapshot");
+    setSnapShotId(newId);
     setLimitBeforeEmissions(1);
     const fixture = await loadFixture(deployContracts);
     owner = fixture.owner;

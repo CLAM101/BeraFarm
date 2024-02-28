@@ -4,7 +4,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { BlockTag, Log } from "@ethersproject/abstract-provider";
-import { deployContracts } from "./testHelpers/deploy-contracts";
+import { deployContracts, setSnapShotId } from "./testHelpers/deploy-contracts";
 import { BeraCub, BeraFarm, FuzzToken, MockHoney } from "../typechain-types";
 import {
   setMaxCubSupply,
@@ -14,6 +14,7 @@ import {
   setLimitBeforeFullTokenTrading,
   setInitialFuzzSupply,
   setMaxFuzzSupply,
+  snapShotId,
 } from "./testHelpers/deploy-contracts";
 
 async function deployWithConfig() {
@@ -29,7 +30,7 @@ const fixture = async () => {
   return deployWithConfig();
 };
 
-describe("Bera Farm Tests", async function () {
+describe("Bond and Buy", async function () {
   let beraCub: BeraCub,
     beraFarm: BeraFarm,
     fuzzToken: FuzzToken,
@@ -42,6 +43,11 @@ describe("Bera Farm Tests", async function () {
     sixthAccount: HardhatEthersSigner;
 
   before(async function () {
+    console.log("snapShotId", snapShotId);
+    await ethers.provider.send("evm_revert", [snapShotId]);
+
+    const newId = await ethers.provider.send("evm_snapshot");
+    setSnapShotId(newId);
     const loadedFixture = await loadFixture(fixture);
     owner = loadedFixture.owner;
     mockHoney = loadedFixture.mockHoney;

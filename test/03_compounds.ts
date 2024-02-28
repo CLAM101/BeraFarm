@@ -14,6 +14,8 @@ import {
   setLimitBeforeFullTokenTrading,
   setInitialFuzzSupply,
   setMaxFuzzSupply,
+  snapShotId,
+  setSnapShotId,
 } from "./testHelpers/deploy-contracts";
 describe("Compounding Tests", async function () {
   let beraCub: BeraCub,
@@ -28,6 +30,9 @@ describe("Compounding Tests", async function () {
     sixthAccount: HardhatEthersSigner;
 
   before(async function () {
+    await ethers.provider.send("evm_revert", [snapShotId]);
+    const newId = await ethers.provider.send("evm_snapshot");
+    setSnapShotId(newId);
     setMaxSupplyForHoney(5);
     setLimitBeforeEmissions(2);
     setLimitBeforeFullTokenTrading(5);
