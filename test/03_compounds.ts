@@ -17,6 +17,16 @@ import {
   snapShotId,
   setSnapShotId,
 } from "./testHelpers/deploy-contracts";
+const helpers = require("@nomicfoundation/hardhat-toolbox/network-helpers");
+
+async function deployWithConfig() {
+  setMaxSupplyForHoney(5);
+  setLimitBeforeEmissions(2);
+  setLimitBeforeFullTokenTrading(5);
+  setMaxSupplyFirstBatch(3);
+
+  return deployContracts();
+}
 describe("Compounding Tests", async function () {
   let beraCub: BeraCub,
     beraFarm: BeraFarm,
@@ -29,25 +39,24 @@ describe("Compounding Tests", async function () {
     fifthAccount: HardhatEthersSigner,
     sixthAccount: HardhatEthersSigner;
 
+  const fixture = async () => {
+    return deployWithConfig();
+  };
+
   before(async function () {
-    await ethers.provider.send("evm_revert", [snapShotId]);
-    const newId = await ethers.provider.send("evm_snapshot");
-    setSnapShotId(newId);
-    setMaxSupplyForHoney(5);
-    setLimitBeforeEmissions(2);
-    setLimitBeforeFullTokenTrading(5);
-    setMaxSupplyFirstBatch(3);
-    const fixture = await loadFixture(deployContracts);
-    owner = fixture.owner;
-    mockHoney = fixture.mockHoney;
-    otherAccount = fixture.otherAccount;
-    thirdAccount = fixture.thirdAccount;
-    fourthAccount = fixture.fourthAccount;
-    fifthAccount = fixture.fifthAccount;
-    sixthAccount = fixture.sixthAccount;
-    beraCub = fixture.beraCub;
-    fuzzToken = fixture.fuzzToken;
-    beraFarm = fixture.beraFarm;
+    await helpers.reset("https://rpc.ankr.com/berachain_testnet", 810321);
+
+    const loadedFixture = await loadFixture(fixture);
+    owner = loadedFixture.owner;
+    mockHoney = loadedFixture.mockHoney;
+    otherAccount = loadedFixture.otherAccount;
+    thirdAccount = loadedFixture.thirdAccount;
+    fourthAccount = loadedFixture.fourthAccount;
+    fifthAccount = loadedFixture.fifthAccount;
+    sixthAccount = loadedFixture.sixthAccount;
+    beraCub = loadedFixture.beraCub;
+    fuzzToken = loadedFixture.fuzzToken;
+    beraFarm = loadedFixture.beraFarm;
 
     // open platform for testing
     await beraFarm.connect(owner).setPlatformState(true);
@@ -100,9 +109,9 @@ describe("Compounding Tests", async function () {
 
       expect(beraCubBalance).to.equal(amountOfBeraCubs);
 
-      const stakingDuration = 24 * 3600;
+      const stakingDuration = 144 * 3600;
 
-      const expectedReward = ethers.parseEther("18");
+      const expectedReward = ethers.parseEther("108");
 
       await ethers.provider.send("evm_increaseTime", [stakingDuration]);
       await ethers.provider.send("evm_mine");
@@ -224,6 +233,45 @@ describe("Compounding Tests", async function () {
       console.log("Farmer After Compound 2", farmerAfterCompound);
     });
 
-    it("Will not compound at a cost higher than the set limit of 25 $Fuzz", async function () {});
+    it("Will not compound at a cost higher than the set limit of 25 $Fuzz", async function () {
+      const expectedCompoundCostMax = ethers.parseEther("25");
+
+      let maxCompoundCostSoFar = await beraFarm.maxCompoundCostSoFar();
+
+      console.log(
+        "Max Bond Cost So Far",
+        ethers.formatEther(maxCompoundCostSoFar)
+      );
+
+      const farmerBeforeCompound = await beraFarm
+        .connect(owner)
+        .getFarmerByAddress(owner.address);
+
+      console.log("Farmer Before Compound to Max", farmerBeforeCompound);
+
+      for (let index = 0; index < 3; index++) {
+        await beraFarm.connect(owner).compoundBeraCubs();
+
+        const costAfterCompound = await beraFarm.maxCompoundCostSoFar();
+
+        console.log(
+          "Cost After Compound",
+          ethers.formatEther(costAfterCompound)
+        );
+      }
+
+      const compoundTx = await beraFarm.connect(owner).compoundBeraCubs();
+
+      await compoundTx.wait();
+
+      maxCompoundCostSoFar = await beraFarm.maxCompoundCostSoFar();
+
+      console.log(
+        "Max Bond Cost So Far after 2 compounds",
+        ethers.formatEther(maxCompoundCostSoFar)
+      );
+
+      expect(maxCompoundCostSoFar).to.equal(expectedCompoundCostMax);
+    });
   });
 });

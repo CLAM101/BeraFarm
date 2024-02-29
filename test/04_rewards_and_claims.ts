@@ -17,7 +17,12 @@ import {
   snapShotId,
   setSnapShotId,
 } from "./testHelpers/deploy-contracts";
+const helpers = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 
+async function deployWithConfig() {
+  setLimitBeforeEmissions(1);
+  return deployContracts();
+}
 describe("Emissions Tax, Rewards and controls Tests", async function () {
   let beraCub: BeraCub,
     beraFarm: BeraFarm,
@@ -30,22 +35,24 @@ describe("Emissions Tax, Rewards and controls Tests", async function () {
     fifthAccount: HardhatEthersSigner,
     sixthAccount: HardhatEthersSigner;
 
+  const fixture = async () => {
+    return deployWithConfig();
+  };
+
   before(async function () {
-    await ethers.provider.send("evm_revert", [snapShotId]);
-    const newId = await ethers.provider.send("evm_snapshot");
-    setSnapShotId(newId);
-    setLimitBeforeEmissions(1);
-    const fixture = await loadFixture(deployContracts);
-    owner = fixture.owner;
-    mockHoney = fixture.mockHoney;
-    otherAccount = fixture.otherAccount;
-    thirdAccount = fixture.thirdAccount;
-    fourthAccount = fixture.fourthAccount;
-    fifthAccount = fixture.fifthAccount;
-    sixthAccount = fixture.sixthAccount;
-    beraCub = fixture.beraCub;
-    fuzzToken = fixture.fuzzToken;
-    beraFarm = fixture.beraFarm;
+    await helpers.reset("https://rpc.ankr.com/berachain_testnet", 810321);
+
+    const loadedFixture = await loadFixture(fixture);
+    owner = loadedFixture.owner;
+    mockHoney = loadedFixture.mockHoney;
+    otherAccount = loadedFixture.otherAccount;
+    thirdAccount = loadedFixture.thirdAccount;
+    fourthAccount = loadedFixture.fourthAccount;
+    fifthAccount = loadedFixture.fifthAccount;
+    sixthAccount = loadedFixture.sixthAccount;
+    beraCub = loadedFixture.beraCub;
+    fuzzToken = loadedFixture.fuzzToken;
+    beraFarm = loadedFixture.beraFarm;
 
     // open platform for testing
     await beraFarm.connect(owner).setPlatformState(true);

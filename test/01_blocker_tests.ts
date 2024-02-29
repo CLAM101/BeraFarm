@@ -32,9 +32,6 @@ describe("Bera Farm Blocker Tests", async function () {
 
   describe("Blocker Tests", async function () {
     before(async function () {
-      let snapShotId = await ethers.provider.send("evm_snapshot");
-
-      setSnapShotId(snapShotId);
       setMaxCubSupply(71);
       setMaxSupplyForHoney(27);
       setLimitBeforeEmissions(2);

@@ -16,7 +16,7 @@ import {
   setMaxFuzzSupply,
   snapShotId,
 } from "./testHelpers/deploy-contracts";
-
+const helpers = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 async function deployWithConfig() {
   setMaxSupplyForHoney(6);
   setLimitBeforeEmissions(2);
@@ -43,11 +43,7 @@ describe("Bond and Buy", async function () {
     sixthAccount: HardhatEthersSigner;
 
   before(async function () {
-    console.log("snapShotId", snapShotId);
-    await ethers.provider.send("evm_revert", [snapShotId]);
-
-    const newId = await ethers.provider.send("evm_snapshot");
-    setSnapShotId(newId);
+    await helpers.reset("https://rpc.ankr.com/berachain_testnet", 810321);
     const loadedFixture = await loadFixture(fixture);
     owner = loadedFixture.owner;
     mockHoney = loadedFixture.mockHoney;

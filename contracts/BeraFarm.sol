@@ -186,13 +186,6 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         uint256 totalSupplyBeforeAmount = getTotalBeraCubs();
         uint256 totalSupplyPlusAmount = totalSupplyBeforeAmount.add(_amount);
 
-        console.log(
-            "Total Supply in buy function",
-            totalSupplyPlusAmount,
-            "Max Supply",
-            maxSupplyForHoney
-        );
-
         require(
             totalSupplyPlusAmount <= maxSupplyForHoney,
             "Honey Bera Cubs Sold Out buy with Fuzz"
@@ -267,13 +260,6 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         require(isLive, "Platform is offline");
         require(!bondingClosedOwner, "Bonding is closed owner");
         uint256 totalSupply = getTotalBeraCubs();
-
-        console.log(
-            "Total Supply in bond function",
-            totalSupply,
-            "Max Supply",
-            maxSupplyForHoney
-        );
 
         require(
             totalSupply >= maxSupplyForHoney,
@@ -351,12 +337,6 @@ contract BeraFarm is Ownable, ReentrancyGuard {
 
         beraCubNftContract.buyBeraCubs(msg.sender, 1);
 
-        console.log(
-            "Claims Fuzz",
-            farmer.claimsFuzz,
-            "Compound cost",
-            compoundCost
-        );
         farmer.claimsFuzz -= compoundCost;
 
         farmer.beraCubsCompounded = beraCubsCompounded;
