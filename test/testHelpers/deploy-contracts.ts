@@ -14,6 +14,7 @@ export let limitBeforeFullTokenTrading = 5000;
 export let initialFuzzSupply = ethers.parseEther("3000000");
 export let maxFuzzSupply = ethers.parseEther("10000000");
 export let snapShotId: string;
+export let maxCubsPerWallet = 20;
 
 //Use these to set limits for testing purposes
 export function setMaxCubSupply(newSupply: number) {
@@ -46,6 +47,10 @@ export function setInitialFuzzSupply(newSupply: number) {
 
 export function setMaxFuzzSupply(newSupply: number) {
   maxFuzzSupply = ethers.parseEther(newSupply.toString());
+}
+
+export function setMaxCubsPerWallet(newLimit: number) {
+  maxCubsPerWallet = newLimit;
 }
 
 export async function deployContracts() {
@@ -173,6 +178,7 @@ export async function deployContracts() {
     limitBeforeEmissions,
     limitBeforeFullTokenTrading,
     factoryAddress,
+    maxCubsPerWallet,
     {
       gasLimit: 30000000,
     }

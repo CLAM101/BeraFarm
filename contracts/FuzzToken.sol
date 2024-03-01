@@ -107,8 +107,11 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
         // This allows for loading of the LP, and for people to sell tokens into the LP whilst hibernation in progress.
         if (hibernating && from != owner() && to != liquidityPool) {
             // Require that a receiving wallet will not hold more than 1% of supply after a transfer whilst hibernation is in effect
+
+            uint256 newBalance = balanceOf(to).add(amount);
+
             require(
-                balanceOf(to) <= totalSupply() / 100,
+                newBalance <= totalSupply() / 100,
                 "Just getting warmed up, limit of 1% of $FUZZ can be Traded until Bera Hibernation is complete!"
             );
         }
@@ -136,8 +139,12 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
         hibernating = false;
     }
 
-    function openTradingToEveryoneOwner() external onlyOwner {
+    function openTradingToNonCubsOwner() external onlyOwner {
         cubsOnly = false;
+    }
+
+    function closeTradingToNonCubsOwner() external onlyOwner {
+        cubsOnly = true;
     }
 
     function openTradingToEveryone() external onlyController {
@@ -163,7 +170,7 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
     }
 
     modifier onlyController() {
-        require(isController[_msgSender()], "CallerNotController");
+        require(isController[_msgSender()], "Caller Not Controller");
         _;
     }
 
