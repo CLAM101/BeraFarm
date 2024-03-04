@@ -1,10 +1,8 @@
-import "@nomicfoundation/hardhat-chai-matchers";
 import { ethers } from "hardhat";
-import { BeraCub, FuzzToken, BeraFarm, MockHoney } from "../../typechain-types";
-import { Helpers } from "./helpers";
-import { bexABI } from "./ABI/bex-abi";
-import { ERC20ABI } from "./ABI/ERC20-abi";
-
+import { ContractFactory } from "ethers";
+import { ERC20ABI } from "../test/testHelpers/ABI/ERC20-abi";
+import { Helpers } from "../test/testHelpers/helpers";
+import { bexABI } from "../test/testHelpers/ABI/bex-abi";
 // these are defaults that will be set when deploying to testnet and mainnet
 export let maxCubSupply = 15000;
 export let maxSupplyFirstBatch = 5000;
@@ -15,54 +13,10 @@ export let initialFuzzSupply = ethers.parseEther("3000000");
 export let maxFuzzSupply = ethers.parseEther("10000000");
 export let snapShotId: string;
 export let maxCubsPerWallet = 20;
-
-//Use these to set limits for testing purposes
-export function setMaxCubSupply(newSupply: number) {
-  maxCubSupply = newSupply;
-}
-
-export function setSnapShotId(newSnapShotId: string) {
-  snapShotId = newSnapShotId;
-}
-
-export function setMaxSupplyFirstBatch(newSupply: number) {
-  maxSupplyFirstBatch = newSupply;
-}
-
-export function setLimitBeforeEmissions(newLimit: number) {
-  limitBeforeEmissions = newLimit;
-}
-
-export function setMaxSupplyForHoney(newSupply: number) {
-  maxSupplyForHoney = newSupply;
-}
-
-export function setLimitBeforeFullTokenTrading(newLimit: number) {
-  limitBeforeFullTokenTrading = newLimit;
-}
-
-export function setInitialFuzzSupply(newSupply: number) {
-  initialFuzzSupply = ethers.parseEther(newSupply.toString());
-}
-
-export function setMaxFuzzSupply(newSupply: number) {
-  maxFuzzSupply = ethers.parseEther(newSupply.toString());
-}
-
-export function setMaxCubsPerWallet(newLimit: number) {
-  maxCubsPerWallet = newLimit;
-}
-
-export async function deployContracts() {
-  let beraCub: BeraCub;
-  let fuzzToken: FuzzToken;
-  let beraFarm: BeraFarm;
-  let mockHoney: MockHoney;
-  const helpers = new Helpers();
-
+async function main() {
   const routerAddress = "0xB6120De62561D702087142DE405EEB02c18873Bc";
   const factoryAddress = "0xad88D4ABbE0d0672f00eB3B83E6518608d82e95d";
-
+  const helpers = new Helpers();
   // Contracts are deployed using the first signer/account by default
   const [
     owner,
@@ -75,19 +29,11 @@ export async function deployContracts() {
     eighthAccount,
   ] = await ethers.getSigners();
 
-  const BeraCub = await ethers.getContractFactory("BeraCub");
-  const BeraFarm = await ethers.getContractFactory("BeraFarm");
-  const FuzzToken = await ethers.getContractFactory("FuzzToken");
-  const MockHoney = await ethers.getContractFactory("MockHoney");
+  const beraCub = await ethers.deployContract("BeraCub", [maxCubSupply]);
 
-  beraCub = (await BeraCub.deploy(maxCubSupply, {
-    gasLimit: 30000000,
-  })) as unknown as BeraCub;
+  const deployedContract = await beraCub.waitForDeployment();
 
-  await beraCub.waitForDeployment();
-
-  console.log("Bera Cub NFT Contract Deployed At:", beraCub.target);
-
+  console.log("BeraCub deployed to:", deployedContract.target);
   const mintToAddresses = [
     owner.address,
     otherAccount.address,
@@ -96,30 +42,40 @@ export async function deployContracts() {
     fifthAccount.address,
   ];
 
-  console.log("Minting to addresses:", mintToAddresses);
-
-  mockHoney = (await MockHoney.deploy(
+  const mockHoney = await ethers.deployContract("MockHoney", [
     ethers.parseEther("10000000"),
-    mintToAddresses
-  )) as unknown as MockHoney;
-  await mockHoney.waitForDeployment();
+    mintToAddresses,
+  ]);
 
-  console.log("Mock $Honey contract Deployed At:", mockHoney.target);
+  const deployedMockHoney = await mockHoney.waitForDeployment();
 
-  fuzzToken = (await FuzzToken.deploy(
+  console.log("MockHoney deployed to:", deployedMockHoney.target);
+
+  const fuzzToken = await ethers.deployContract("FuzzToken", [
     initialFuzzSupply,
     maxFuzzSupply,
     otherAccount.address,
     mockHoney.target,
-    beraCub.target
-  )) as unknown as FuzzToken;
-  await fuzzToken.waitForDeployment();
+    beraCub.target,
+  ]);
+
+  const deployedFuzzToken = await fuzzToken.waitForDeployment();
+
+  console.log("FuzzToken deployed to:", deployedFuzzToken.target);
 
   const pair = await fuzzToken.getPair();
 
   const LPContract = new ethers.Contract(pair, ERC20ABI, owner);
 
   console.log("$FUZZ token contract Deployed At:", fuzzToken.target);
+
+  await fuzzToken
+    .connect(owner)
+    .approve(routerAddress, ethers.parseEther("1000000"));
+
+  await mockHoney
+    .connect(owner)
+    .approve(routerAddress, ethers.parseEther("40000"));
 
   await fuzzToken
     .connect(owner)
@@ -166,7 +122,7 @@ export async function deployContracts() {
 
   console.log("LP Balance:", LPBalance.toString());
 
-  beraFarm = (await BeraFarm.deploy(
+  const beraFarm = await ethers.deployContract("BeraFarm", [
     beraCub.target,
     fuzzToken.target,
     mockHoney.target,
@@ -181,10 +137,7 @@ export async function deployContracts() {
     limitBeforeFullTokenTrading,
     factoryAddress,
     maxCubsPerWallet,
-    {
-      gasLimit: 30000000,
-    }
-  )) as unknown as BeraFarm;
+  ]);
 
   await beraCub.addBeraFarmContract(beraFarm.target);
 
@@ -196,19 +149,15 @@ export async function deployContracts() {
 
   console.log("Bera Farm Deployed:", beraFarm.target);
 
-  return {
-    betterChickenAbi: fuzzToken.interface,
-    beraCub,
-    fuzzToken,
-    beraFarm,
-    owner,
-    otherAccount,
-    thirdAccount,
-    fourthAccount,
-    fifthAccount,
-    sixthAccount,
-    seventhAccount,
-    eighthAccount,
-    mockHoney,
-  };
+  await beraFarm.connect(owner).setPlatformState(true);
+  await beraFarm.connect(owner).openBuyBeraCubsHoney();
+  await fuzzToken.connect(owner).enableTrading();
+  await beraCub.connect(owner).openMinting();
 }
+
+// We recommend this pattern to be able to use async/await everywhere
+// and properly handle errors.
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

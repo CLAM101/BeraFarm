@@ -200,6 +200,45 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         uint256 beraCubsOwned = beraCubBalance + _amount;
         require(beraCubsOwned <= maxCubsPerWallet, "Max Bera Cubs Owned");
 
+        transactionTotal = getHoneyBuyTransactionCost(
+            totalSupplyBeforeAmount,
+            totalSupplyPlusAmount,
+            _amount
+        );
+
+        uint256 honeyBalance = honey.balanceOf(msg.sender);
+
+        require(honeyBalance >= transactionTotal, "Not enough $HONEY");
+
+        _transferFrom(honey, msg.sender, address(treasury), transactionTotal);
+
+        beraCubNftContract.buyBeraCubs(msg.sender, _amount);
+
+        _setOrUpdateFarmer(msg.sender);
+
+        _updateClaims(msg.sender);
+
+        if (
+            totalSupplyPlusAmount >= limitBeforeEmissions &&
+            !emissionsStarted &&
+            !emissionsClosedOwner
+        ) {
+            _openEmissions();
+        }
+
+        if (totalSupplyPlusAmount >= limitBeforeFullTokenTrading) {
+            fuzz.openTradingToEveryone();
+        }
+
+        emit BoughtBeraCubsHoney(msg.sender, _amount, transactionTotal);
+    }
+
+    function getHoneyBuyTransactionCost(
+        uint256 totalSupplyBeforeAmount,
+        uint256 totalSupplyPlusAmount,
+        uint256 _amount
+    ) public view returns (uint256) {
+        uint256 transactionTotal;
         if (
             totalSupplyBeforeAmount <= maxSupplyFirstBatch &&
             totalSupplyPlusAmount <= maxSupplyFirstBatch
@@ -227,31 +266,7 @@ contract BeraFarm is Ownable, ReentrancyGuard {
             }
         }
 
-        uint256 honeyBalance = honey.balanceOf(msg.sender);
-
-        require(honeyBalance >= transactionTotal, "Not enough $HONEY");
-
-        _transferFrom(honey, msg.sender, address(treasury), transactionTotal);
-
-        beraCubNftContract.buyBeraCubs(msg.sender, _amount);
-
-        _setOrUpdateFarmer(msg.sender);
-
-        _updateClaims(msg.sender);
-
-        if (
-            totalSupplyPlusAmount >= limitBeforeEmissions &&
-            !emissionsStarted &&
-            !emissionsClosedOwner
-        ) {
-            _openEmissions();
-        }
-
-        if (totalSupplyPlusAmount >= limitBeforeFullTokenTrading) {
-            fuzz.openTradingToEveryone();
-        }
-
-        emit BoughtBeraCubsHoney(msg.sender, _amount, transactionTotal);
+        return transactionTotal;
     }
 
     /**

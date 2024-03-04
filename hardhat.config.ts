@@ -3,6 +3,7 @@ import * as dotenv from "dotenv";
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomicfoundation/hardhat-verify";
 import "hardhat-gas-reporter";
+import "@nomicfoundation/hardhat-ignition-ethers";
 
 dotenv.config();
 
