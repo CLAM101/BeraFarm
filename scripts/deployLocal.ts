@@ -7,7 +7,7 @@ import { bexABI } from "../test/testHelpers/ABI/bex-abi";
 export let maxCubSupply = 15000;
 export let maxSupplyFirstBatch = 5000;
 export let limitBeforeEmissions = 1250;
-export let maxSupplyForHoney = 5000;
+export let maxSupplyForHoney = 3;
 export let limitBeforeFullTokenTrading = 5000;
 export let initialFuzzSupply = ethers.parseEther("3000000");
 export let maxFuzzSupply = ethers.parseEther("10000000");
@@ -50,6 +50,8 @@ async function main() {
   const deployedMockHoney = await mockHoney.waitForDeployment();
 
   console.log("MockHoney deployed to:", deployedMockHoney.target);
+
+  console.log("Other account address:", otherAccount.address);
 
   const fuzzToken = await ethers.deployContract("FuzzToken", [
     initialFuzzSupply,
@@ -138,6 +140,8 @@ async function main() {
     factoryAddress,
     maxCubsPerWallet,
   ]);
+
+  await fuzzToken.connect(owner).setBeraFarmAddress(beraFarm.target);
 
   await beraCub.addBeraFarmContract(beraFarm.target);
 

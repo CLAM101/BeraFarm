@@ -34,6 +34,7 @@ interface IUniswapV2Router02 {
 contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
     uint256 private initialSupply;
     uint256 public maxSupply;
+    uint256 public totalBurned;
 
     IUniswapV2Router02 private uniswapRouter;
 
@@ -50,6 +51,7 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
     bool public cubsOnly = true;
     bool public tradingEnabled = false;
     address public treasuryAddress;
+    address public beraFarmAddress;
     uint256 public maxTransactionPercent = 1;
     uint256 private maxTransactionAmount;
     address public liquidityPool;
@@ -95,8 +97,11 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
             );
             return;
         }
-        if (cubsOnly && to != address(0)) {
+        if (cubsOnly && to != address(0) && to != beraFarmAddress) {
+            console.log("To address", to);
             uint256 traderCubbalance = beraCubNftContract.balanceOf(to);
+
+            console.log("Trader Cub Balance: %s", traderCubbalance);
             require(
                 traderCubbalance > 0,
                 "Cubs Only Is active - You need to have a Bera Cub to trade FUZZ!"
@@ -132,6 +137,7 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
         address from_,
         uint256 amount_
     ) external override onlyController {
+        totalBurned = totalBurned.add(amount_);
         _burn(from_, amount_);
     }
 
@@ -159,9 +165,19 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
         tradingEnabled = false;
     }
 
+    function setBeraFarmAddress(address _beraFarmAddress) external onlyOwner {
+        beraFarmAddress = _beraFarmAddress;
+    }
+
     function addController(address toAdd_) external onlyOwner {
         isController[toAdd_] = true;
         emit ControllerAdded(toAdd_);
+    }
+
+    function isControllerAddress(
+        address toCheck_
+    ) external view returns (bool) {
+        return isController[toCheck_];
     }
 
     function removeController(address toRemove_) external onlyOwner {

@@ -4,6 +4,7 @@ import "@nomicfoundation/hardhat-toolbox";
 import "@nomicfoundation/hardhat-verify";
 import "hardhat-gas-reporter";
 import "@nomicfoundation/hardhat-ignition-ethers";
+import "./tasks/general-tasks";
 
 dotenv.config();
 
@@ -57,7 +58,7 @@ const config: HardhatUserConfig = {
       blockGasLimit: 30000000,
       allowBlocksWithSameTimestamp: true,
       forking: {
-        url: "https://rpc.ankr.com/berachain_testnet",
+        url: "https://quicknode-rpc.berachain.com/",
       },
     },
     artio_testnet: {

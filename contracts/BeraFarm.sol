@@ -422,6 +422,14 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         return farmers[_user].claimsFuzz.add(pendingFuzz);
     }
 
+    function getWalletCompoundCost(
+        address _user
+    ) public view returns (uint256) {
+        Farmer memory farmer = farmers[_user];
+
+        return farmer.beraCubsCompounded.mul(baseLineCompoundCost);
+    }
+
     function getTaxEstimate() external view returns (uint256) {
         uint256 time = block.timestamp;
         uint256 beraCubBalance = beraCubNftContract.balanceOf(msg.sender);
@@ -610,4 +618,8 @@ contract BeraFarm is Ownable, ReentrancyGuard {
     function closeEmissionsOwner() external onlyOwner {
         emissionsClosedOwner = true;
     }
+
+    receive() external payable {}
+
+    fallback() external payable {}
 }
