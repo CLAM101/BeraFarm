@@ -427,7 +427,10 @@ contract BeraFarm is Ownable, ReentrancyGuard {
     ) public view returns (uint256) {
         Farmer memory farmer = farmers[_user];
 
-        return farmer.beraCubsCompounded.mul(baseLineCompoundCost);
+        return
+            farmer.beraCubsCompounded > 0
+                ? farmer.beraCubsCompounded.mul(baseLineCompoundCost)
+                : 5 * 10 ** 18;
     }
 
     function getTaxEstimate() external view returns (uint256) {

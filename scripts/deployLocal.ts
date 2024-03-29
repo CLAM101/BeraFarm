@@ -6,7 +6,7 @@ import { bexABI } from "../test/testHelpers/ABI/bex-abi";
 // these are defaults that will be set when deploying to testnet and mainnet
 export let maxCubSupply = 15000;
 export let maxSupplyFirstBatch = 5000;
-export let limitBeforeEmissions = 1250;
+export let limitBeforeEmissions = 3;
 export let maxSupplyForHoney = 3;
 export let limitBeforeFullTokenTrading = 5000;
 export let initialFuzzSupply = ethers.parseEther("3000000");
@@ -157,6 +157,8 @@ async function main() {
   await beraFarm.connect(owner).openBuyBeraCubsHoney();
   await fuzzToken.connect(owner).enableTrading();
   await beraCub.connect(owner).openMinting();
+
+  await fuzzToken.connect(owner).removeHibernation();
 }
 
 // We recommend this pattern to be able to use async/await everywhere

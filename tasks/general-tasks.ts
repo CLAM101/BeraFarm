@@ -39,7 +39,7 @@ task(
   "transferCub",
   "Transfers ERC-20 tokens from one account to another"
 ).setAction(async (taskArgs, hre) => {
-  const tokenAddress = "0x5c74c94173f05da1720953407cbb920f3df9f887";
+  const tokenAddress = "0x720472c8ce72c2A2D711333e064ABD3E6BbEAdd3";
 
   const [
     owner,
@@ -68,4 +68,13 @@ task(
   console.log(
     `Transferred ${taskArgs.amount} tokens from ${taskArgs.from} to ${taskArgs.to}`
   );
+});
+
+task(
+  "mineBlocks",
+  "Transfers ERC-20 tokens from one account to another"
+).setAction(async (taskArgs, hre) => {
+  const stakingDuration = 144 * 3600;
+  await hre.ethers.provider.send("evm_increaseTime", [stakingDuration]);
+  await hre.ethers.provider.send("evm_mine");
 });
