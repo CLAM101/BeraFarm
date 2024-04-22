@@ -79,5 +79,5 @@ export default buildModule("AddLiquid", (m): any => {
     { from: ownerAccount, after: pool }
   );
 
-  return { router, pool };
+  return { router, pool, addedLiquid };
 });
