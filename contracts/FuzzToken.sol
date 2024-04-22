@@ -9,36 +9,12 @@ import "./Interfaces/IFUZZTOKEN.sol";
 import "hardhat/console.sol";
 import "./Interfaces/IBERACUB.sol";
 
-interface IUniswapV2Factory {
-    function createPair(
-        address tokenA,
-        address tokenB
-    ) external returns (address pair);
-}
-
-interface IUniswapV2Router02 {
-    function factory() external pure returns (address);
-
-    function addLiquidity(
-        address tokenA,
-        address tokenB,
-        uint amountADesired,
-        uint amountBDesired,
-        uint amountAMin,
-        uint amountBMin,
-        address to,
-        uint deadline
-    ) external returns (uint amountA, uint amountB, uint liquidity);
-}
-
 contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
     uint256 private initialSupply;
     uint256 public maxSupply;
     uint256 public totalBurned;
 
-    IUniswapV2Router02 private uniswapRouter;
-
-    IBERACUB private beraCubNftContract;
+    IBERACUB public beraCubNftContract;
 
     using SafeMath for uint256;
     using SafeERC20 for ERC20;
@@ -60,18 +36,8 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
         uint256 _initialSupply,
         uint256 _maxSupply,
         address _treasuryAddress,
-        address _honeyTokenAddress,
         address _beraCubNftContract
     ) ERC20("Fuzz Token", "FUZZ") {
-        IUniswapV2Router02 _uniswapRouter = IUniswapV2Router02(
-            0xB6120De62561D702087142DE405EEB02c18873Bc
-        );
-        uniswapRouter = _uniswapRouter;
-
-        liquidityPool = IUniswapV2Factory(_uniswapRouter.factory()).createPair(
-            address(this),
-            _honeyTokenAddress
-        );
         initialSupply = _initialSupply;
         maxSupply = _maxSupply;
         treasuryAddress = _treasuryAddress;
@@ -183,6 +149,10 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
     function removeController(address toRemove_) external onlyOwner {
         isController[toRemove_] = false;
         emit ControllerRemoved(toRemove_);
+    }
+
+    function setpair(address _pair) external onlyOwner {
+        liquidityPool = _pair;
     }
 
     modifier onlyController() {

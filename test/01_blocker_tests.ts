@@ -4,6 +4,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { deployContracts } from "./testHelpers/deploy-contracts";
+import { deployCounterModuleFixture } from "./testHelpers/deployContractsIgnition";
 import { BeraCub, BeraFarm, FuzzToken, MockHoney } from "../typechain-types";
 import {
   setMaxCubSupply,
@@ -17,19 +18,18 @@ import {
 } from "./testHelpers/deploy-contracts";
 
 describe("Bera Farm Blocker Tests", async function () {
-  let beraCub: BeraCub,
-    beraFarm: BeraFarm,
-    fuzzToken: FuzzToken,
-    mockHoney: MockHoney,
-    owner: HardhatEthersSigner,
-    otherAccount: HardhatEthersSigner,
-    thirdAccount: HardhatEthersSigner,
-    fourthAccount: HardhatEthersSigner,
-    fifthAccount: HardhatEthersSigner,
-    seventhAccount: HardhatEthersSigner,
-    sixthAccount: HardhatEthersSigner,
-    eighthAccount: HardhatEthersSigner;
-
+  let beraCub: any,
+    beraFarm: any,
+    fuzzToken: any,
+    mockHoney: any,
+    owner: any,
+    otherAccount: any,
+    thirdAccount: any,
+    fourthAccount: any,
+    fifthAccount: any,
+    seventhAccount: any,
+    sixthAccount: any,
+    eighthAccount: any;
   describe("Blocker Tests", async function () {
     before(async function () {
       setMaxCubSupply(71);
@@ -37,7 +37,7 @@ describe("Bera Farm Blocker Tests", async function () {
       setLimitBeforeEmissions(2);
       setLimitBeforeFullTokenTrading(5);
       setMaxSupplyFirstBatch(3);
-      const fixture = await loadFixture(deployContracts);
+      const fixture = await loadFixture(deployCounterModuleFixture);
       owner = fixture.owner;
       mockHoney = fixture.mockHoney;
       otherAccount = fixture.otherAccount;

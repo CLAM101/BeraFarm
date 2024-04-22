@@ -8,11 +8,11 @@ import "./tasks/general-tasks";
 
 dotenv.config();
 
-const deployerPrivateKey = process.env.DEPLOYER_ACCOUNT_KEY2 || "";
-
+const deployerPrivateKey = process.env.ACCOUNT_PRIVATE_KEY || "";
 const etherScanApiKEY = process.env.ETHERSCAN_API_KEY || "";
 const baseGoerliApiKey = process.env.BASE_API_KEY || "";
 const avaxFujiApiKey = process.env.AVAX_FUJI_API_KEY || "";
+const sepoilaApiKey = process.env.SEPOILA_API_KEY || "";
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -23,7 +23,7 @@ const config: HardhatUserConfig = {
           viaIR: true,
           optimizer: {
             enabled: true,
-            runs: 200,
+            runs: 50,
           },
         },
       },
@@ -38,7 +38,8 @@ const config: HardhatUserConfig = {
 
   etherscan: {
     apiKey: {
-      artio_testnet: "artio_testnet", // apiKey is not required, just set a placeholder
+      artio_testnet: "artio_testnet",
+      sepolia: etherScanApiKEY, // apiKey is not required, just set a placeholder
     },
     customChains: [
       {
@@ -62,7 +63,13 @@ const config: HardhatUserConfig = {
       },
     },
     artio_testnet: {
-      url: "https://rpc.ankr.com/berachain_testnet",
+      chainId: parseInt(`${process.env.CHAIN_ID}`),
+      url: `${process.env.RPC_URL || ""}`,
+      accounts: [deployerPrivateKey],
+    },
+
+    sepolia: {
+      url: `https://eth-sepolia.g.alchemy.com/v2/${sepoilaApiKey}`,
       accounts: [deployerPrivateKey],
     },
   },

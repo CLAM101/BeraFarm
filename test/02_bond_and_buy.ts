@@ -54,7 +54,7 @@ describe("Bond and Buy", async function () {
     sixthAccount = loadedFixture.sixthAccount;
     beraCub = loadedFixture.beraCub;
     fuzzToken = loadedFixture.fuzzToken;
-    beraFarm = loadedFixture.beraFarm;
+    // beraFarm = loadedFixture.beraFarm;
 
     await beraFarm.connect(owner).setPlatformState(true);
     await beraFarm.connect(owner).openBuyBeraCubsHoney();

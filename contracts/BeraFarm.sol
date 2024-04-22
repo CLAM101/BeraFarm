@@ -13,15 +13,10 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "hardhat/console.sol";
 
 //Interfaces
-interface IUniswapV2Pair {
-    function getReserves() external view returns (uint112, uint112, uint32);
-}
-
-interface IXDEXFactory {
-    function getPair(
-        address tokenA,
-        address tokenB
-    ) external view returns (address pair);
+interface IBEXCONTRACT {
+    function getLiquidity(
+        address pool
+    ) external view returns (address[] memory asset, uint256[] memory amounts);
 }
 
 contract BeraFarm is Ownable, ReentrancyGuard {
@@ -56,12 +51,12 @@ contract BeraFarm is Ownable, ReentrancyGuard {
     event RewardsClaimed(address sender, uint256 rewardAfterTax, uint256 tax);
 
     //Addresses
-    IBERACUB private beraCubNftContract;
-    IFUZZTOKEN private fuzz;
+    IBERACUB public beraCubNftContract;
+    IFUZZTOKEN public fuzz;
     IERC20 private immutable honey;
-    IUniswapV2Pair private fuzzHoneyPair;
-    IXDEXFactory private factory;
+    IBEXCONTRACT private bexContract;
     address public treasury;
+    address public pool;
 
     //Platfrom Settings
     bool public isLive = false;
@@ -107,14 +102,18 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         uint256 lastUpdate;
     }
 
+    struct Liquidity {
+        address[] asset;
+        uint256[] amounts;
+    }
+
     //Mappings
     mapping(address => Farmer) private farmers;
 
     constructor(
-        address _beraCubNftContract, // address of Bera Cub NFT contract
-        address _fuzz, //$FUZZ token
         address _honey, //$Honey stablecoin
-        address _pair, //Honey Fuzz pool
+        address _bexAddress, //address of Bex DEX
+        address _pool, //address of the pool
         address _treasury, //Wallet to hold fees and taxes
         uint256 _dailyInterest, //as a percentage
         uint256 _claimTaxFuzz, //As percentage
@@ -123,13 +122,11 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         uint256 _maxSupplyFirstBatch, //Max supply of Bera Cubs for sale with $Honey
         uint256 _limitBeforeEmissions, //Limit of Cubs to be sold befor emissions are turned on
         uint256 _limitBeforeFullTokenTrading,
-        address _factory, // Dex factory
         uint256 _maxCubsPerWallet
     ) {
-        beraCubNftContract = IBERACUB(_beraCubNftContract);
-        fuzz = IFUZZTOKEN(_fuzz);
+        pool = _pool;
         honey = IERC20(_honey);
-        fuzzHoneyPair = IUniswapV2Pair(_pair);
+        bexContract = IBEXCONTRACT(_bexAddress);
         treasury = _treasury;
         dailyInterest = _dailyInterest;
         claimTaxFuzz = _claimTaxFuzz;
@@ -138,7 +135,6 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         maxSupplyFirstBatch = _maxSupplyFirstBatch;
         limitBeforeEmissions = _limitBeforeEmissions;
         limitBeforeFullTokenTrading = _limitBeforeFullTokenTrading;
-        factory = IXDEXFactory(_factory);
         maxCubsPerWallet = _maxCubsPerWallet;
     }
 
@@ -167,11 +163,11 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         require(fuzzOwned >= transactionTotal, "Not enough $FUZZ");
 
         beraCubNftContract.buyBeraCubs(msg.sender, _amount);
-        Farmer memory farmer;
 
         fuzz.transferFrom(msg.sender, address(this), transactionTotal);
         fuzz.burn(address(this), transactionTotal);
-        farmers[msg.sender] = farmer;
+
+        _setOrUpdateFarmer(msg.sender);
         _updateClaims(msg.sender);
 
         emit BoughtBeraCubsFuzz(msg.sender, _amount, transactionTotal);
@@ -191,7 +187,7 @@ contract BeraFarm is Ownable, ReentrancyGuard {
 
         require(
             totalSupplyPlusAmount <= maxSupplyForHoney,
-            "Honey Bera Cubs Sold Out buy with Fuzz"
+            "Honey Bera Cubs for $HONEY Sold Out buy with $FUZZ"
         );
 
         uint256 transactionTotal;
@@ -282,7 +278,7 @@ contract BeraFarm is Ownable, ReentrancyGuard {
 
         require(
             totalSupply >= maxSupplyForHoney,
-            "Bonding still closed please purchase with $Honey"
+            "Bonding still closed please purchase with $HONEY"
         );
         uint256 beraCubBalance = beraCubNftContract.balanceOf(msg.sender);
         uint256 beraCubsOwned = beraCubBalance + _amount;
@@ -295,14 +291,14 @@ contract BeraFarm is Ownable, ReentrancyGuard {
 
         require(honeyBalance >= transactionTotal, "Not enough $HONEY");
 
-        Farmer memory farmer;
+        Farmer storage farmer = farmers[msg.sender];
 
         _transferFrom(honey, msg.sender, address(treasury), transactionTotal);
 
         beraCubNftContract.buyBeraCubs(msg.sender, _amount);
 
         farmer.beraCubsBonded += _amount;
-        farmers[msg.sender] = farmer;
+
         _updateClaims(msg.sender);
 
         emit BeraCubsBonded(msg.sender, _amount, transactionTotal);
@@ -473,7 +469,16 @@ contract BeraFarm is Ownable, ReentrancyGuard {
     }
 
     function getFuzzPrice() public view returns (uint256) {
-        (uint256 token0, uint256 token1, ) = fuzzHoneyPair.getReserves();
+        (address[] memory assets, uint256[] memory amounts) = bexContract
+            .getLiquidity(pool);
+
+        Liquidity memory fetchedLiquidity = Liquidity({
+            asset: assets,
+            amounts: amounts
+        });
+
+        uint256 token0 = fetchedLiquidity.amounts[0];
+        uint256 token1 = fetchedLiquidity.amounts[1];
 
         require(token0 > 0 && token1 > 0, "Reserves not available");
 
@@ -512,14 +517,11 @@ contract BeraFarm is Ownable, ReentrancyGuard {
     //Internal functions
     function _setOrUpdateFarmer(address _farmerAddress) internal {
         Farmer memory farmer;
-        if (farmers[_farmerAddress].exists) {
-            farmer = farmers[_farmerAddress];
-        } else {
+        if (!farmers[_farmerAddress].exists) {
             farmer = Farmer(true, 0, 0, 0, 0);
             farmersAddresses.push(_farmerAddress);
+            farmers[_farmerAddress] = farmer;
         }
-
-        farmers[_farmerAddress] = farmer;
     }
 
     function _updateClaims(address _address) internal {
@@ -588,6 +590,14 @@ contract BeraFarm is Ownable, ReentrancyGuard {
     function setBondDiscount(uint256 newDiscount) public onlyOwner {
         require(newDiscount <= 75, "Discount above limit");
         bondDiscount = newDiscount;
+    }
+
+    function setCubNFTContract(address _beraCubNftContract) public onlyOwner {
+        beraCubNftContract = IBERACUB(_beraCubNftContract);
+    }
+
+    function setFuzzTokenAddress(address _fuzz) public onlyOwner {
+        fuzz = IFUZZTOKEN(_fuzz);
     }
 
     function openBonding() external onlyOwner {

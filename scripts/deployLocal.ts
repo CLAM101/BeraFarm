@@ -13,6 +13,10 @@ export let initialFuzzSupply = ethers.parseEther("3000000");
 export let maxFuzzSupply = ethers.parseEther("10000000");
 export let snapShotId: string;
 export let maxCubsPerWallet = 20;
+
+//IMPORTANT NOTE!!!
+//UPDATE arguments to exclude contract addresses in deployment
+
 async function main() {
   const routerAddress = "0xB6120De62561D702087142DE405EEB02c18873Bc";
   const factoryAddress = "0xad88D4ABbE0d0672f00eB3B83E6518608d82e95d";
@@ -56,12 +60,13 @@ async function main() {
   const fuzzToken = await ethers.deployContract("FuzzToken", [
     initialFuzzSupply,
     maxFuzzSupply,
-    otherAccount.address,
+    sixthAccount.address,
     mockHoney.target,
-    beraCub.target,
   ]);
 
   const deployedFuzzToken = await fuzzToken.waitForDeployment();
+
+  await fuzzToken.connect(owner).setCubNFTContract(beraCub.target);
 
   console.log("FuzzToken deployed to:", deployedFuzzToken.target);
 
@@ -125,8 +130,6 @@ async function main() {
   console.log("LP Balance:", LPBalance.toString());
 
   const beraFarm = await ethers.deployContract("BeraFarm", [
-    beraCub.target,
-    fuzzToken.target,
     mockHoney.target,
     pair,
     sixthAccount.address,
@@ -142,6 +145,10 @@ async function main() {
   ]);
 
   await fuzzToken.connect(owner).setBeraFarmAddress(beraFarm.target);
+
+  await beraFarm.connect(owner).setCubNFTContract(beraCub.target);
+
+  await beraFarm.connect(owner).setFuzzTokenAddress(fuzzToken.target);
 
   await beraCub.addBeraFarmContract(beraFarm.target);
 
