@@ -4,7 +4,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { BlockTag, Log } from "@ethersproject/abstract-provider";
-import { deployContracts } from "./testHelpers/deploy-contracts";
+
 import { BeraCub, BeraFarm, FuzzToken, MockHoney } from "../typechain-types";
 import { deployTokenTests } from "./testHelpers/deployContractsIgnition";
 

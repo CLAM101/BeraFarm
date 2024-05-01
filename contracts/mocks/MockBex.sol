@@ -100,8 +100,6 @@ contract MockBex {
     function getLiquidity(
         address pool
     ) external view returns (address[] memory asset, uint256[] memory amounts) {
-        console.log("Honey", honey);
-
         asset = new address[](2);
         asset[0] = honey;
         asset[1] = fuzz;

@@ -4,18 +4,9 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { BlockTag, Log } from "@ethersproject/abstract-provider";
-import { deployContracts, setSnapShotId } from "./testHelpers/deploy-contracts";
+
 import { BeraCub, BeraFarm, FuzzToken, MockHoney } from "../typechain-types";
-import {
-  setMaxCubSupply,
-  setMaxSupplyFirstBatch,
-  setLimitBeforeEmissions,
-  setMaxSupplyForHoney,
-  setLimitBeforeFullTokenTrading,
-  setInitialFuzzSupply,
-  setMaxFuzzSupply,
-  snapShotId,
-} from "./testHelpers/deploy-contracts";
+
 const helpers = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 import { deployBondAndBuy } from "./testHelpers/deployContractsIgnition";
 

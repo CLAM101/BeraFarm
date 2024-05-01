@@ -69,11 +69,8 @@ contract FuzzToken is IFUZZTOKEN, ERC20, Ownable {
                 to != beraFarmAddress &&
                 from != owner())
         ) {
-            console.log("owner", owner());
-            console.log("To address", to);
             uint256 traderCubbalance = beraCubNftContract.balanceOf(to);
 
-            console.log("Trader Cub Balance: %s", traderCubbalance);
             require(
                 traderCubbalance > 0,
                 "Cubs Only Is active - You need to have a Bera Cub to trade FUZZ!"
