@@ -8,10 +8,11 @@ export default buildModule("MockBex", (m): any => {
 
   const fuzzTokenLiquidAmount = m.getParameter("fuzzTokenLiquidAmount");
   const mockHoneyLiquidAmount = m.getParameter("mockHoneyLiquidAmount");
+  const mockPoolAddress = m.getParameter("mockPoolAddress");
 
   const mockBex = m.contract(
     "MockBex",
-    [mockHoney, fuzzToken, mockHoneyLiquidAmount, fuzzTokenLiquidAmount],
+    [mockHoney, fuzzToken, mockHoneyLiquidAmount, fuzzTokenLiquidAmount, mockPoolAddress],
     {
       id: "MockBexContract",
     }

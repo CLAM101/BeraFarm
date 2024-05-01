@@ -15,10 +15,6 @@ export default buildModule("AddLiquid", (m): any => {
   const mockHoneyLiquidAmount = m.getParameter("mockHoneyLiquidAmount");
   const ownerAccount = m.getAccount(0);
 
-  if (!routerAddress) {
-    routerAddress = m.useModule(MockBex);
-  }
-
   m.call(fuzzToken, "approve", [routerAddress, fuzzTokenLiquidAmount], {
     from: ownerAccount,
   });

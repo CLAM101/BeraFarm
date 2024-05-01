@@ -1,0 +1,32 @@
+{
+  "FuzzToken": {
+    "maxFuzzSupply": "10000000000000000000000000",
+    "initialFuzzSupply": "3000000000000000000000000"
+  },
+
+  "MockBex": {
+    "fuzzTokenLiquidAmount": "1000000000000000000000000",
+    "mockHoneyLiquidAmount": "40000000000000000000000",
+    "mockPoolAddress": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+  },
+
+  "BeraCub": {
+    "maxCubSupply": 71
+  },
+
+  "MockHoney": {
+    "amountPerAddress": "10000000000000000000000000"
+  },
+  "BeraFarm": {
+    "mockPoolAddress": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+    "treasuryAddress": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+    "dailyInterest": 60,
+    "claimTaxFuzz": 10,
+    "bondDiscount": 10,
+    "maxSupplyForHoney": 6,
+    "maxSupplyFirstBatch": 3,
+    "limitBeforeEmissions": 1,
+    "limitBeforeFullTokenTrading": 5,
+    "maxCubsPerWallet": 20
+  }
+}

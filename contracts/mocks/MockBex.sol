@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
+import "hardhat/console.sol";
 
 contract MockBex {
     address public honey;
@@ -96,17 +97,19 @@ contract MockBex {
         emit PoolCreated(pool);
     }
 
-    // Function to get liquidity information of a pool
     function getLiquidity(
         address pool
-    )
-        external
-        view
-        returns (address[2] memory assets, uint256[2] memory amounts)
-    {
-        require(pool == pairPool, "Invalid pool address");
-        assets = [honey, fuzz];
-        amounts = [honeyAmount, fuzzAmount];
-        return (assets, amounts);
+    ) external view returns (address[] memory asset, uint256[] memory amounts) {
+        console.log("Honey", honey);
+
+        asset = new address[](2);
+        asset[0] = honey;
+        asset[1] = fuzz;
+
+        amounts = new uint256[](2);
+        amounts[0] = honeyAmount;
+        amounts[1] = fuzzAmount;
+
+        return (asset, amounts);
     }
 }

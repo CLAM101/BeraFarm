@@ -17,49 +17,45 @@ import {
   snapShotId,
 } from "./testHelpers/deploy-contracts";
 const helpers = require("@nomicfoundation/hardhat-toolbox/network-helpers");
-async function deployWithConfig() {
-  setMaxSupplyForHoney(6);
-  setLimitBeforeEmissions(2);
-  setLimitBeforeFullTokenTrading(5);
-  setMaxSupplyFirstBatch(3);
-
-  return deployContracts();
-}
-
-const fixture = async () => {
-  return deployWithConfig();
-};
+import { deployBondAndBuy } from "./testHelpers/deployContractsIgnition";
 
 describe("Bond and Buy", async function () {
-  let beraCub: BeraCub,
-    beraFarm: BeraFarm,
-    fuzzToken: FuzzToken,
-    mockHoney: MockHoney,
+  let beraCub: any,
+    beraFarm: any,
+    fuzzToken: any,
+    mockHoney: any,
     owner: HardhatEthersSigner,
     otherAccount: HardhatEthersSigner,
     thirdAccount: HardhatEthersSigner,
     fourthAccount: HardhatEthersSigner,
     fifthAccount: HardhatEthersSigner,
-    sixthAccount: HardhatEthersSigner;
+    sixthAccount: HardhatEthersSigner,
+    seventhAccount: HardhatEthersSigner,
+    eighthAccount: HardhatEthersSigner;
 
   before(async function () {
-    await helpers.reset("https://rpc.ankr.com/berachain_testnet", 810321);
-    const loadedFixture = await loadFixture(fixture);
-    owner = loadedFixture.owner;
-    mockHoney = loadedFixture.mockHoney;
-    otherAccount = loadedFixture.otherAccount;
-    thirdAccount = loadedFixture.thirdAccount;
-    fourthAccount = loadedFixture.fourthAccount;
-    fifthAccount = loadedFixture.fifthAccount;
-    sixthAccount = loadedFixture.sixthAccount;
+    await helpers.reset("https://rpc.ankr.com/berachain_testnet", 1886012);
+    const loadedFixture = await loadFixture(deployBondAndBuy);
+
     beraCub = loadedFixture.beraCub;
     fuzzToken = loadedFixture.fuzzToken;
-    // beraFarm = loadedFixture.beraFarm;
+    beraFarm = loadedFixture.beraFarm;
+    mockHoney = loadedFixture.mockHoney;
+
+    [
+      owner,
+      otherAccount,
+      thirdAccount,
+      fourthAccount,
+      fifthAccount,
+      sixthAccount,
+      seventhAccount,
+      eighthAccount,
+    ] = await ethers.getSigners();
 
     await beraFarm.connect(owner).setPlatformState(true);
     await beraFarm.connect(owner).openBuyBeraCubsHoney();
     await fuzzToken.connect(owner).enableTrading();
-    await beraCub.connect(owner).openMinting();
   });
 
   describe("Bond and Buy Tests", async function () {

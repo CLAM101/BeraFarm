@@ -181,6 +181,10 @@ contract BeraFarm is Ownable, ReentrancyGuard {
     function buyBeraCubsHoney(uint256 _amount) public nonReentrant {
         require(isLive, "Platform is offline");
         require(buyBeraCubsHoneyOpen, "Buy Bera Cubs is closed");
+        require(
+            beraCubNftContract != IBERACUB(address(0)),
+            "Bera Cub NFT not set"
+        );
 
         uint256 totalSupplyBeforeAmount = getTotalBeraCubs();
         uint256 totalSupplyPlusAmount = totalSupplyBeforeAmount.add(_amount);
@@ -192,7 +196,11 @@ contract BeraFarm is Ownable, ReentrancyGuard {
 
         uint256 transactionTotal;
 
+        console.log("before balance check");
+
         uint256 beraCubBalance = beraCubNftContract.balanceOf(msg.sender);
+
+        console.log("after balance check", beraCubBalance);
         uint256 beraCubsOwned = beraCubBalance + _amount;
         require(beraCubsOwned <= maxCubsPerWallet, "Max Bera Cubs Owned");
 
@@ -202,17 +210,28 @@ contract BeraFarm is Ownable, ReentrancyGuard {
             _amount
         );
 
+        console.log("Honey Transaction Total", transactionTotal);
+
         uint256 honeyBalance = honey.balanceOf(msg.sender);
 
+        console.log("Honey Balance", honeyBalance);
+
         require(honeyBalance >= transactionTotal, "Not enough $HONEY");
-
+        //IMPORTANT fix transaction total its wrong
+        console.log("before transfer");
         _transferFrom(honey, msg.sender, address(treasury), transactionTotal);
-
+        console.log("after transfer");
         beraCubNftContract.buyBeraCubs(msg.sender, _amount);
+
+        console.log("buy call passed");
 
         _setOrUpdateFarmer(msg.sender);
 
+        console.log("farmer update passed");
+
         _updateClaims(msg.sender);
+
+        console.log("update claims passed");
 
         if (
             totalSupplyPlusAmount >= limitBeforeEmissions &&
@@ -221,11 +240,11 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         ) {
             _openEmissions();
         }
-
+        console.log("open emissions passed");
         if (totalSupplyPlusAmount >= limitBeforeFullTokenTrading) {
             fuzz.openTradingToEveryone();
         }
-
+        console.log("open trading passed");
         emit BoughtBeraCubsHoney(msg.sender, _amount, transactionTotal);
     }
 
@@ -241,20 +260,33 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         ) {
             transactionTotal = _amount.mul(honeyCostFirstBatch);
         } else if (totalSupplyBeforeAmount > maxSupplyFirstBatch) {
+            console.log("full second batch applied");
             transactionTotal = _amount.mul(honeyCostSecondBatch);
         } else if (
             totalSupplyBeforeAmount <= maxSupplyFirstBatch &&
             totalSupplyPlusAmount > maxSupplyFirstBatch
         ) {
+            console.log(
+                "Total SUpply plus amount",
+                totalSupplyPlusAmount,
+                "max supply first batch",
+                maxSupplyFirstBatch
+            );
+
             uint256 unitsAtSecondBatchPrice = totalSupplyPlusAmount.sub(
                 maxSupplyFirstBatch
             );
+
+            console.log("Units at second batch price", unitsAtSecondBatchPrice);
+            console.log("amount", _amount);
 
             transactionTotal = unitsAtSecondBatchPrice.mul(
                 honeyCostSecondBatch
             );
 
             uint256 remainingCubs = _amount.sub(unitsAtSecondBatchPrice);
+
+            console.log("remaining cubs", remainingCubs);
 
             if (remainingCubs > 0) {
                 uint256 remainingCost = remainingCubs.mul(honeyCostFirstBatch);
@@ -393,9 +425,9 @@ contract BeraFarm is Ownable, ReentrancyGuard {
             msg.sender == address(beraCubNftContract),
             "Only Bera Cub contract can call this function"
         );
-
+        console.log("updateClaimsOnTokenTransfer fired");
         _setOrUpdateFarmer(_to);
-
+        console.log("Set or update farmer success");
         if (_from == address(0)) {
             _updateClaims(_to);
             return;
@@ -477,20 +509,15 @@ contract BeraFarm is Ownable, ReentrancyGuard {
             amounts: amounts
         });
 
-        uint256 token0 = fetchedLiquidity.amounts[0];
-        uint256 token1 = fetchedLiquidity.amounts[1];
+        uint256 honeyToken = fetchedLiquidity.amounts[0];
+        uint256 fuzzToken = fetchedLiquidity.amounts[1];
 
-        require(token0 > 0 && token1 > 0, "Reserves not available");
+        require(honeyToken > 0 && fuzzToken > 0, "Reserves not available");
 
         uint256 price;
 
-        if (honey > fuzz) {
-            uint256 convertedToken0 = token0.div(1e18);
-            price = token1.div(convertedToken0);
-        } else {
-            uint256 convertedToken1 = token1.div(1e18);
-            price = token0.div(convertedToken1);
-        }
+        uint256 convertedToken1 = fuzzToken.div(1e18);
+        price = honeyToken.div(convertedToken1);
 
         return price;
     }

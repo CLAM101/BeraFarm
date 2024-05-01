@@ -9,9 +9,5 @@ export default buildModule("BeraCub", (m): any => {
     id: "BeraCubContract",
   });
 
-  m.call(beraCub, "openMinting", [], { from: account1 });
-
-  m.staticCall(beraCub, "mintingOpen", []);
-
   return { beraCub };
 });

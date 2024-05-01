@@ -32,11 +32,17 @@ contract BeraCub is Ownable, ERC721URIStorage {
     ) public onlyController {
         require(mintingOpen, "MintingNotOpen");
         string memory tokenURI = formatTokenURI();
-
+        console.log("bera cub contract buy called");
         uint256 newTotalSupply = tokenCounter + _amount;
         require(newTotalSupply < maxSupply, "All Bera Cubs Minted :(");
+
+        console.log("amount", _amount, "reciever", _reciever);
+
+        console.log("TOken counter", tokenCounter);
         for (uint256 i = 0; i < _amount; i++) {
+            console.log("before safe mint");
             _safeMint(_reciever, tokenCounter);
+            console.log("safe mint success");
             _setTokenURI(tokenCounter, tokenURI);
             tokenCounter = tokenCounter + 1;
 
@@ -83,6 +89,7 @@ contract BeraCub is Ownable, ERC721URIStorage {
         address to,
         uint256 amount
     ) internal virtual override {
+        console.log("after token transfer fired");
         super._afterTokenTransfer(from, to, amount);
 
         beraFarm.updateClaimsOnTokenTransfer(from, to);

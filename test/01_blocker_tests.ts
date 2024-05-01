@@ -4,18 +4,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { deployContracts } from "./testHelpers/deploy-contracts";
-import { deployCounterModuleFixture } from "./testHelpers/deployContractsIgnition";
-import { BeraCub, BeraFarm, FuzzToken, MockHoney } from "../typechain-types";
-import {
-  setMaxCubSupply,
-  setMaxSupplyFirstBatch,
-  setLimitBeforeEmissions,
-  setMaxSupplyForHoney,
-  setLimitBeforeFullTokenTrading,
-  setInitialFuzzSupply,
-  setMaxFuzzSupply,
-  setSnapShotId,
-} from "./testHelpers/deploy-contracts";
+import { deployBlocker } from "./testHelpers/deployContractsIgnition";
 
 describe("Bera Farm Blocker Tests", async function () {
   let beraCub: any,
@@ -32,21 +21,19 @@ describe("Bera Farm Blocker Tests", async function () {
     eighthAccount: any;
   describe("Blocker Tests", async function () {
     before(async function () {
-      setMaxCubSupply(71);
-      setMaxSupplyForHoney(27);
-      setLimitBeforeEmissions(2);
-      setLimitBeforeFullTokenTrading(5);
-      setMaxSupplyFirstBatch(3);
-      const fixture = await loadFixture(deployCounterModuleFixture);
-      owner = fixture.owner;
+      [
+        owner,
+        otherAccount,
+        thirdAccount,
+        fourthAccount,
+        fifthAccount,
+        sixthAccount,
+        seventhAccount,
+        eighthAccount,
+      ] = await ethers.getSigners();
+      const fixture = await loadFixture(deployBlocker);
+
       mockHoney = fixture.mockHoney;
-      otherAccount = fixture.otherAccount;
-      thirdAccount = fixture.thirdAccount;
-      fourthAccount = fixture.fourthAccount;
-      fifthAccount = fixture.fifthAccount;
-      sixthAccount = fixture.sixthAccount;
-      seventhAccount = fixture.seventhAccount;
-      eighthAccount = fixture.eighthAccount;
       beraCub = fixture.beraCub;
       fuzzToken = fixture.fuzzToken;
       beraFarm = fixture.beraFarm;
@@ -97,7 +84,7 @@ describe("Bera Farm Blocker Tests", async function () {
 
     it("Blocks user from Bonding Bera Cubs before bonding opens", async function () {
       await expect(beraFarm.bondBeraCubs(2)).to.be.revertedWith(
-        "Bonding still closed please purchase with $Honey"
+        "Bonding still closed please purchase with $HONEY"
       );
     });
 
@@ -143,7 +130,9 @@ describe("Bera Farm Blocker Tests", async function () {
         .reverted;
       await expect(
         beraFarm.connect(owner).buyBeraCubsHoney(2)
-      ).to.be.revertedWith("Honey Bera Cubs Sold Out buy with Fuzz");
+      ).to.be.revertedWith(
+        "Honey Bera Cubs for $HONEY Sold Out buy with $FUZZ"
+      );
     });
 
     it("Blocks User from Bonding Cubs if they don't have enough $Honey", async function () {

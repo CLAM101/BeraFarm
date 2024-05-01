@@ -6,62 +6,46 @@ import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { BlockTag, Log } from "@ethersproject/abstract-provider";
 import { deployContracts } from "./testHelpers/deploy-contracts";
 import { BeraCub, BeraFarm, FuzzToken, MockHoney } from "../typechain-types";
-import {
-  setMaxCubSupply,
-  setMaxSupplyFirstBatch,
-  setLimitBeforeEmissions,
-  setMaxSupplyForHoney,
-  setLimitBeforeFullTokenTrading,
-  setInitialFuzzSupply,
-  setMaxFuzzSupply,
-  snapShotId,
-  setSnapShotId,
-} from "./testHelpers/deploy-contracts";
+
+import { deployCompounds } from "./testHelpers/deployContractsIgnition";
 const helpers = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 
-async function deployWithConfig() {
-  setMaxSupplyForHoney(5);
-  setLimitBeforeEmissions(2);
-  setLimitBeforeFullTokenTrading(5);
-  setMaxSupplyFirstBatch(3);
-
-  return deployContracts();
-}
 describe("Compounding Tests", async function () {
-  let beraCub: BeraCub,
-    beraFarm: BeraFarm,
-    fuzzToken: FuzzToken,
-    mockHoney: MockHoney,
+  let beraCub: any,
+    beraFarm: any,
+    fuzzToken: any,
+    mockHoney: any,
     owner: HardhatEthersSigner,
     otherAccount: HardhatEthersSigner,
     thirdAccount: HardhatEthersSigner,
     fourthAccount: HardhatEthersSigner,
     fifthAccount: HardhatEthersSigner,
-    sixthAccount: HardhatEthersSigner;
-
-  const fixture = async () => {
-    return deployWithConfig();
-  };
+    sixthAccount: HardhatEthersSigner,
+    seventhAccount: HardhatEthersSigner,
+    eighthAccount: HardhatEthersSigner;
 
   before(async function () {
-    await helpers.reset("https://rpc.ankr.com/berachain_testnet", 810321);
+    await helpers.reset("https://rpc.ankr.com/berachain_testnet", 1886012);
+    const loadedFixture = await loadFixture(deployCompounds);
 
-    const loadedFixture = await loadFixture(fixture);
-    owner = loadedFixture.owner;
-    mockHoney = loadedFixture.mockHoney;
-    otherAccount = loadedFixture.otherAccount;
-    thirdAccount = loadedFixture.thirdAccount;
-    fourthAccount = loadedFixture.fourthAccount;
-    fifthAccount = loadedFixture.fifthAccount;
-    sixthAccount = loadedFixture.sixthAccount;
     beraCub = loadedFixture.beraCub;
     fuzzToken = loadedFixture.fuzzToken;
     beraFarm = loadedFixture.beraFarm;
+    mockHoney = loadedFixture.mockHoney;
 
-    // open platform for testing
+    [
+      owner,
+      otherAccount,
+      thirdAccount,
+      fourthAccount,
+      fifthAccount,
+      sixthAccount,
+      seventhAccount,
+      eighthAccount,
+    ] = await ethers.getSigners();
+
     await beraFarm.connect(owner).setPlatformState(true);
     await beraFarm.connect(owner).openBuyBeraCubsHoney();
-    await beraCub.connect(owner).openMinting();
     await fuzzToken.connect(owner).enableTrading();
   });
 

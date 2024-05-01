@@ -1,5 +1,7 @@
 {
-  "AddLiquid#Router": "0x0d5862FDbdd12490f9b4De54c236cff63B038074",
-  "BeraCub#BeraCubContract": "0xAA292E8611aDF267e563f334Ee42320aC96D0463",
-  "MockHoney#MockHoneyContract": "0x5c74c94173F05dA1720953407cbb920F3DF9f887"
+  "BeraCub#BeraCubContract": "0xD5ac451B0c50B9476107823Af206eD814a2e2580",
+  "MockHoney#MockHoneyContract": "0xF8e31cb472bc70500f08Cd84917E5A1912Ec8397",
+  "FuzzToken#FuzzTokenContract": "0xc96304e3c037f81dA488ed9dEa1D8F2a48278a75",
+  "MockBex#MockBexContract": "0x07882Ae1ecB7429a84f1D53048d35c4bB2056877",
+  "BeraFarm#BeraFarm": "0x22753E4264FDDc6181dc7cce468904A80a363E44"
 }

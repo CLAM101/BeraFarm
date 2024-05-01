@@ -221,12 +221,12 @@ task("generalViewCall", "get options of a pool from bex contract").setAction(
   async (taskArgs, hre) => {
     try {
       const [deployer] = await hre.ethers.getSigners();
-      const bexAddress = "0x0d5862FDbdd12490f9b4De54c236cff63B038074";
+      const bexAddress = "0xc96304e3c037f81da488ed9dea1d8f2a48278a75";
 
       const bexContract = new hre.ethers.Contract(bexAddress, bexABI, deployer);
 
       const mintingOpenStatus = await bexContract.getPoolOptions(
-        "0x5479FbDef04302D2DEEF0Cc78f7D503d81fDFCC9"
+        "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
       );
 
       console.log("Pool Options: ", mintingOpenStatus);
@@ -247,7 +247,7 @@ task(
     const bexContract = new hre.ethers.Contract(bexAddress, bexABI, deployer);
 
     const liquidity = await bexContract.getLiquidity(
-      "0x751524E7bAdd31d018A4CAF4e4924a21b0c13CD0"
+      "0xa88572F08f79D28b8f864350f122c1CC0AbB0d96"
     );
 
     console.log("Liquidity: ", liquidity);
