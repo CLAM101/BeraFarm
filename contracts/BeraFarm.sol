@@ -196,11 +196,8 @@ contract BeraFarm is Ownable, ReentrancyGuard {
 
         uint256 transactionTotal;
 
-        console.log("before balance check");
-
         uint256 beraCubBalance = beraCubNftContract.balanceOf(msg.sender);
 
-        console.log("after balance check", beraCubBalance);
         uint256 beraCubsOwned = beraCubBalance + _amount;
         require(beraCubsOwned <= maxCubsPerWallet, "Max Bera Cubs Owned");
 
@@ -210,28 +207,18 @@ contract BeraFarm is Ownable, ReentrancyGuard {
             _amount
         );
 
-        console.log("Honey Transaction Total", transactionTotal);
-
         uint256 honeyBalance = honey.balanceOf(msg.sender);
-
-        console.log("Honey Balance", honeyBalance);
 
         require(honeyBalance >= transactionTotal, "Not enough $HONEY");
         //IMPORTANT fix transaction total its wrong
-        console.log("before transfer");
-        _transferFrom(honey, msg.sender, address(treasury), transactionTotal);
-        console.log("after transfer");
-        beraCubNftContract.buyBeraCubs(msg.sender, _amount);
 
-        console.log("buy call passed");
+        _transferFrom(honey, msg.sender, address(treasury), transactionTotal);
+
+        beraCubNftContract.buyBeraCubs(msg.sender, _amount);
 
         _setOrUpdateFarmer(msg.sender);
 
-        console.log("farmer update passed");
-
         _updateClaims(msg.sender);
-
-        console.log("update claims passed");
 
         if (
             totalSupplyPlusAmount >= limitBeforeEmissions &&
@@ -240,11 +227,11 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         ) {
             _openEmissions();
         }
-        console.log("open emissions passed");
+
         if (totalSupplyPlusAmount >= limitBeforeFullTokenTrading) {
             fuzz.openTradingToEveryone();
         }
-        console.log("open trading passed");
+
         emit BoughtBeraCubsHoney(msg.sender, _amount, transactionTotal);
     }
 
@@ -260,33 +247,20 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         ) {
             transactionTotal = _amount.mul(honeyCostFirstBatch);
         } else if (totalSupplyBeforeAmount > maxSupplyFirstBatch) {
-            console.log("full second batch applied");
             transactionTotal = _amount.mul(honeyCostSecondBatch);
         } else if (
             totalSupplyBeforeAmount <= maxSupplyFirstBatch &&
             totalSupplyPlusAmount > maxSupplyFirstBatch
         ) {
-            console.log(
-                "Total SUpply plus amount",
-                totalSupplyPlusAmount,
-                "max supply first batch",
-                maxSupplyFirstBatch
-            );
-
             uint256 unitsAtSecondBatchPrice = totalSupplyPlusAmount.sub(
                 maxSupplyFirstBatch
             );
-
-            console.log("Units at second batch price", unitsAtSecondBatchPrice);
-            console.log("amount", _amount);
 
             transactionTotal = unitsAtSecondBatchPrice.mul(
                 honeyCostSecondBatch
             );
 
             uint256 remainingCubs = _amount.sub(unitsAtSecondBatchPrice);
-
-            console.log("remaining cubs", remainingCubs);
 
             if (remainingCubs > 0) {
                 uint256 remainingCost = remainingCubs.mul(honeyCostFirstBatch);
@@ -425,9 +399,9 @@ contract BeraFarm is Ownable, ReentrancyGuard {
             msg.sender == address(beraCubNftContract),
             "Only Bera Cub contract can call this function"
         );
-        console.log("updateClaimsOnTokenTransfer fired");
+
         _setOrUpdateFarmer(_to);
-        console.log("Set or update farmer success");
+
         if (_from == address(0)) {
             _updateClaims(_to);
             return;

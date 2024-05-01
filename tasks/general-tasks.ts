@@ -255,3 +255,33 @@ task(
     console.log(e);
   }
 });
+
+task(
+  "setPlatfromState",
+  "Approves spend with the Honey contract on testnet"
+).setAction(async (taskArgs, hre) => {
+  try {
+    const farmAddress = "0xA7c59f010700930003b33aB25a7a0679C860f29c";
+
+    const [owner] = await hre.ethers.getSigners();
+
+    const farmArtifacts = await hre.artifacts.readArtifact("BeraFarm");
+
+    const signer = await hre.ethers.getSigner(owner.address);
+    const farmContract = new hre.ethers.Contract(
+      farmAddress,
+      farmArtifacts.abi,
+      signer
+    );
+
+    const platfromState = await farmContract.setPlatformState(true);
+    await platfromState.wait();
+
+    const openBuyBeraCubsHoney = await farmContract.openBuyBeraCubsHoney();
+    await openBuyBeraCubsHoney.wait();
+
+    console.log("platfrom is live");
+  } catch (e) {
+    console.log(e);
+  }
+});

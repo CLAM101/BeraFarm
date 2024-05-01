@@ -1,11 +1,7 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
-import MockHoney from "./MockHoney";
-import MockBex from "./MockBex";
 import BeraCub from "./BeraCub";
 import FuzzToken from "./FuzzToken";
 import BeraFarmLocal from "./BeraFarmLocal";
-
-import { limitBeforeFullTokenTrading } from "../../scripts/deployEthTestNet";
 
 export default buildModule("ApplySettingsLocal", (m): any => {
   const { beraCub } = m.useModule(BeraCub);
@@ -28,6 +24,5 @@ export default buildModule("ApplySettingsLocal", (m): any => {
   //Fuzz Token settings
   m.call(fuzzToken, "addController", [beraFarm], { from: owner });
 
-  // m.call(fuzzToken, "removeHibernation", [], { from: owner });
   return { beraFarm };
 });
