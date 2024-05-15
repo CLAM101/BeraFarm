@@ -1,14 +1,15 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 import BeraCub from "./BeraCub";
-import MockHoney from "./MockHoney";
+
 import FuzzToken from "./FuzzToken";
 import AddLiquidModule from "./AddLiquidModule";
+import BeraFarmTestNet from "./BeraFarmTestNet";
+import ApplySettingsTestNet from "./ApplySettingsTestNet";
 
-export default buildModule("Main", (m): any => {
+export default buildModule("DeployTestNet", (m): any => {
   const { beraCub } = m.useModule(BeraCub);
-  const { mockHoney } = m.useModule(MockHoney);
-  const { fuzzToken } = m.useModule(FuzzToken);
-  const { addLiquid } = m.useModule(AddLiquidModule);
+  const { beraFarm } = m.useModule(BeraFarmTestNet);
+  const { applySettingsTestNet } = m.useModule(ApplySettingsTestNet);
 
-  return { beraCub, mockHoney, fuzzToken, addLiquid };
+  return { beraCub, beraFarm, applySettingsTestNet };
 });

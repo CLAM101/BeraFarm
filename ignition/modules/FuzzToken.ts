@@ -6,7 +6,7 @@ export default buildModule("FuzzToken", (m): any => {
 
   let initialFuzzSupply = m.getParameter("initialFuzzSupply");
   let maxFuzzSupply = m.getParameter("maxFuzzSupply");
-  let treasureAddress = m.getAccount(6);
+  let treasureAddress = m.getAccount(1);
 
   const fuzzToken = m.contract(
     "FuzzToken",

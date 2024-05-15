@@ -1,11 +1,12 @@
 import { task } from "hardhat/config";
 import { bexABI } from "../test/testHelpers/ABI/bex-abi";
+import { ERC20ABI } from "../test/testHelpers/ABI/ERC20-abi";
 
 task(
   "transferToken",
   "Transfers ERC-20 tokens from one account to another"
 ).setAction(async (taskArgs, hre) => {
-  const tokenAddress = "0x5c74c94173f05da1720953407cbb920f3df9f887";
+  const tokenAddress = "0x5302E909d1e93e30F05B5D6Eea766363D14F9892";
 
   const [
     owner,
@@ -32,7 +33,7 @@ task(
   await tx.wait();
 
   console.log(
-    `Transferred ${taskArgs.amount} tokens from ${taskArgs.from} to ${taskArgs.to}`
+    `Transferred ${transferAmount} tokens from ${owner.address} to ${otherAccount.address}`
   );
 });
 
@@ -256,12 +257,73 @@ task(
   }
 });
 
+task("createPool", "Creates a pool on Bex").setAction(async (taskArgs, hre) => {
+  try {
+    const [deployer] = await hre.ethers.getSigners();
+    const bexAddress = "0x0d5862FDbdd12490f9b4De54c236cff63B038074";
+
+    const honeyAddress = "0x7EeCA4205fF31f947EdBd49195a7A88E6A91161B";
+
+    const fuzzTokenAddress = "0xB5Bf70e26872E2713E8cD8054c3a9251e6E70b7E";
+
+    const bexContract = new hre.ethers.Contract(bexAddress, bexABI, deployer);
+
+    const honeyContract = new hre.ethers.Contract(
+      honeyAddress,
+      ERC20ABI,
+      deployer
+    );
+
+    const fuzzTokenContract = new hre.ethers.Contract(
+      fuzzTokenAddress,
+      ERC20ABI,
+      deployer
+    );
+
+    const approvalTxHoney = await honeyContract.approve(
+      bexAddress,
+      "400000000000000000000"
+    );
+    const honeyApprove = await approvalTxHoney.wait();
+
+    console.log("Honey Approval: ", honeyApprove);
+
+    const approvalTxFuzz = await fuzzTokenContract.approve(
+      bexAddress,
+      "10000000000000000000000"
+    );
+
+    const fuzzApprove = await approvalTxFuzz.wait();
+
+    console.log("Fuzz Approval: ", fuzzApprove);
+    const createPoolTx = await bexContract.createPool(
+      "HoneyFuzzPool",
+      [honeyAddress, fuzzTokenAddress],
+      [hre.ethers.parseEther("400"), hre.ethers.parseEther("10000")],
+      "weighted",
+      {
+        weights: [
+          { asset: honeyAddress, weight: 50 },
+          { asset: fuzzTokenAddress, weight: 50 },
+        ],
+        swapFee: "3000000000",
+      }
+    );
+
+    const createResult = await createPoolTx.wait();
+
+    console.log("Liquidity: ", createResult);
+  } catch (e) {
+    console.log(e);
+  }
+});
+
 task(
   "setPlatfromState",
   "Approves spend with the Honey contract on testnet"
 ).setAction(async (taskArgs, hre) => {
   try {
-    const farmAddress = "0xA7c59f010700930003b33aB25a7a0679C860f29c";
+    const farmAddress = "0x4bf010f1b9beDA5450a8dD702ED602A104ff65EE";
 
     const [owner] = await hre.ethers.getSigners();
 
@@ -274,14 +336,53 @@ task(
       signer
     );
 
+    const tokenAddress = "0x5302E909d1e93e30F05B5D6Eea766363D14F9892";
+
+    const tokenArtifacts = await hre.artifacts.readArtifact("FuzzToken");
+
+    const tokenContract = new hre.ethers.Contract(
+      tokenAddress,
+      tokenArtifacts.abi,
+      signer
+    );
+
     const platfromState = await farmContract.setPlatformState(true);
     await platfromState.wait();
 
     const openBuyBeraCubsHoney = await farmContract.openBuyBeraCubsHoney();
     await openBuyBeraCubsHoney.wait();
 
+    const enableTrading = await tokenContract.enableTrading();
+    await enableTrading.wait();
+
     console.log("platfrom is live");
   } catch (e) {
     console.log(e);
+  }
+});
+
+task(
+  "getTransactionDetail",
+  "Approves spend with the Honey contract on testnet"
+).setAction(async (taskArgs, hre) => {
+  try {
+    const provider = hre.ethers.provider;
+
+    const txHash =
+      "0x7d198c343f89e7f7557622714beb4ee5818bc748b0e1de6ccbc37c77be09030d";
+
+    const reciept: any = await provider.getTransactionReceipt(txHash);
+
+    const iface = new hre.ethers.Interface(bexABI);
+
+    reciept.logs.forEach((log: any) => {
+      const event = iface.parseLog(log);
+
+      console.log("event: ", event);
+    });
+
+    console.log("Transaction Reciept: ", reciept.logs);
+  } catch (err) {
+    console.log("Caught get transaction reciept error", err);
   }
 });

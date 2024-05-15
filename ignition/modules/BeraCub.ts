@@ -1,8 +1,6 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
 export default buildModule("BeraCub", (m): any => {
-  const account1 = m.getAccount(0);
-
   const maxCubSupply = m.getParameter("maxCubSupply");
 
   const beraCub = m.contract("BeraCub", [maxCubSupply], {

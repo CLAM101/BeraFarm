@@ -9,6 +9,7 @@ import "./tasks/general-tasks";
 dotenv.config();
 
 const deployerPrivateKey = process.env.ACCOUNT_PRIVATE_KEY || "";
+const treasuryPrivateKey = process.env.TREASURY_ACCOUNT_KEY || "";
 const etherScanApiKEY = process.env.ETHERSCAN_API_KEY || "";
 const baseGoerliApiKey = process.env.BASE_API_KEY || "";
 const avaxFujiApiKey = process.env.AVAX_FUJI_API_KEY || "";
@@ -65,7 +66,7 @@ const config: HardhatUserConfig = {
     artio_testnet: {
       chainId: parseInt(`${process.env.CHAIN_ID}`),
       url: `${process.env.RPC_URL || ""}`,
-      accounts: [deployerPrivateKey],
+      accounts: [deployerPrivateKey, treasuryPrivateKey],
     },
 
     sepolia: {

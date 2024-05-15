@@ -633,6 +633,10 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         emissionsClosedOwner = true;
     }
 
+    function setPool(address _pool) external onlyOwner {
+        pool = _pool;
+    }
+
     receive() external payable {}
 
     fallback() external payable {}
