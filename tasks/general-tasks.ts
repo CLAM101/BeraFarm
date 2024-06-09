@@ -323,7 +323,7 @@ task(
   "Approves spend with the Honey contract on testnet"
 ).setAction(async (taskArgs, hre) => {
   try {
-    const farmAddress = "0x4bf010f1b9beDA5450a8dD702ED602A104ff65EE";
+    const farmAddress = "0xa6e99A4ED7498b3cdDCBB61a6A607a4925Faa1B7";
 
     const [owner] = await hre.ethers.getSigners();
 
@@ -336,7 +336,7 @@ task(
       signer
     );
 
-    const tokenAddress = "0x5302E909d1e93e30F05B5D6Eea766363D14F9892";
+    const tokenAddress = "0x6C2d83262fF84cBaDb3e416D527403135D757892";
 
     const tokenArtifacts = await hre.artifacts.readArtifact("FuzzToken");
 

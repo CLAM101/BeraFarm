@@ -474,6 +474,36 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         return beraCubNftContract.totalSupply();
     }
 
+    function checkHoneyOpen() public view returns (bool) {
+        uint256 totalSupply = beraCubNftContract.totalSupply();
+
+        if (totalSupply < maxSupplyForHoney && buyBeraCubsHoneyOpen) {
+            return true;
+        }
+
+        return false;
+    }
+
+    function checkBondingOpen() public view returns (bool) {
+        uint256 totalSupply = beraCubNftContract.totalSupply();
+
+        if (totalSupply >= maxSupplyForHoney && !bondingClosedOwner) {
+            return true;
+        }
+
+        return false;
+    }
+
+    function checkFuzzOpen() public view returns (bool) {
+        uint256 totalSupply = beraCubNftContract.totalSupply();
+
+        if (totalSupply >= maxSupplyForHoney && buyBeraCubsOpenFuzzOwner) {
+            return true;
+        }
+
+        return false;
+    }
+
     function getFuzzPrice() public view returns (uint256) {
         (address[] memory assets, uint256[] memory amounts) = bexContract
             .getLiquidity(pool);
