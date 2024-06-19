@@ -94,7 +94,7 @@ describe("Marketplace Tests", async function () {
 
       const updateListingTx = await nftMarketplace
         .connect(otherAccount)
-        .updateListing(beraCub.target, tokenId, newPrice);
+        .updateListing(beraCub.target, tokenId, newPrice, 0);
       const confirmedUpdate = await updateListingTx.wait();
 
       //LISTING LOGS
@@ -121,7 +121,7 @@ describe("Marketplace Tests", async function () {
 
       const updateListingTx = await nftMarketplace
         .connect(otherAccount)
-        .cancelListing(beraCub.target, tokenId);
+        .cancelListing(beraCub.target, tokenId, 0);
       const confirmedUpdate = await updateListingTx.wait();
 
       //LISTING LOGS
@@ -160,7 +160,7 @@ describe("Marketplace Tests", async function () {
 
       const buyTx = await nftMarketplace
         .connect(thirdAccount)
-        .buyItem(beraCub.target, tokenId, { value: price });
+        .buyItem(beraCub.target, tokenId, 0, { value: price });
 
       const confirmedBuy = await buyTx.wait();
 
@@ -194,11 +194,6 @@ describe("Marketplace Tests", async function () {
 
       const expectedBalance = initialBal + expectedWithdrawAmount;
 
-      console.log(
-        "Expected Withdraw Amount: ",
-        ethers.formatEther(expectedWithdrawAmount)
-      );
-
       expect(await nftMarketplace.connect(otherAccount).withdrawProceeds()).to
         .not.be.reverted;
 
@@ -209,6 +204,91 @@ describe("Marketplace Tests", async function () {
       );
 
       expect(balanceAfterWithdrawal).to.be.closeTo(expectedBalance, 0.001);
+    });
+
+    it("Should allow listing of multiple items and fetching of all active listings", async function () {
+      const price = ethers.parseEther("1");
+
+      expect(
+        await beraFarm.connect(owner).awardBeraCubs(otherAccount.address, 10)
+      ).to.not.be.reverted;
+
+      let tokenId = 1;
+      for (let i = 0; i < 10; i++) {
+        const approvalTx = await beraCub
+          .connect(otherAccount)
+          .setApprovalForAll(nftMarketplace.target, true);
+
+        const confirmedApproval = await approvalTx.wait();
+
+        const listingTx = await nftMarketplace
+          .connect(otherAccount)
+          .listItem(beraCub.target, tokenId + 1, price);
+        tokenId = tokenId + 1;
+        const confirmedListing = await listingTx.wait();
+      }
+
+      const activeListings = await nftMarketplace.getActiveListings();
+
+      console.log("active Listings", activeListings);
+    });
+
+    it("Should allow cancelation of a listing and reuse of an existing listing index", async function () {
+      const tokenId = 2;
+      let canceledListingId: string;
+      const price = ethers.parseEther("1");
+      const cancelListingTx = await nftMarketplace
+        .connect(otherAccount)
+        .cancelListing(beraCub.target, tokenId, 0);
+      const confirmedCancel = await cancelListingTx.wait();
+
+      //LISTING LOGS
+      let caneclLogs: Log[] = [];
+
+      if (confirmedCancel) {
+        caneclLogs = confirmedCancel.logs as unknown as Log[];
+      }
+
+      caneclLogs.forEach((log: Log) => {
+        const event = nftMarketplace.interface.parseLog(log);
+
+        if (event && event.name === "ItemCanceled") {
+          expect(event.args.seller).to.equal(otherAccount.address);
+          expect(event.args.tokenId).to.equal(tokenId);
+          expect(event.args.nftAddress).to.equal(beraCub.target);
+          expect(event.args.listingId).to.equal(0);
+
+          canceledListingId = ethers.formatUnits(event.args.listingId, 0);
+
+          console.log("listingId in cancel", event.args.listingId);
+        }
+      });
+
+      const listingTx = await nftMarketplace
+        .connect(otherAccount)
+        .listItem(beraCub.target, 2, price);
+
+      const confirmedListing = await listingTx.wait();
+
+      //LISTING LOGS
+      let listingLogs: Log[] = [];
+
+      if (confirmedListing) {
+        listingLogs = confirmedListing.logs as unknown as Log[];
+      }
+
+      listingLogs.forEach((log: Log) => {
+        const event = nftMarketplace.interface.parseLog(log);
+
+        if (event && event.name === "ItemListed") {
+          console.log("listingId in relist", event.args.id);
+          expect(event.args.seller).to.equal(otherAccount.address);
+          expect(event.args.tokenId).to.equal(tokenId);
+          expect(event.args.price).to.equal(ethers.parseEther("1"));
+          expect(event.args.nftAddress).to.equal(beraCub.target);
+          expect(event.args.id).to.equal(canceledListingId);
+        }
+      });
     });
   });
 });

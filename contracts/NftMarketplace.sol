@@ -15,21 +15,35 @@ error PriceMustBeAboveZero();
 
 contract NftMarketplace is ReentrancyGuard {
     struct Listing {
-        uint256 price;
+        uint256 id;
         address seller;
+        address nftContract;
+        uint256 tokenId;
+        uint256 price;
+        bool active;
     }
 
     event ItemListed(
+        uint256 indexed id,
         address indexed seller,
         address indexed nftAddress,
-        uint256 indexed tokenId,
+        uint256 tokenId,
+        uint256 price
+    );
+
+    event ListingUpdated(
+        uint256 indexed id,
+        address indexed seller,
+        address indexed nftAddress,
+        uint256 tokenId,
         uint256 price
     );
 
     event ItemCanceled(
         address indexed seller,
         address indexed nftAddress,
-        uint256 indexed tokenId
+        uint256 indexed tokenId,
+        uint256 listingId
     );
 
     event ItemBought(
@@ -40,6 +54,8 @@ contract NftMarketplace is ReentrancyGuard {
     );
 
     // State Variables
+    Listing[] public activeListings;
+    uint256[] private deletedIndexes;
     mapping(address => mapping(uint256 => Listing)) private s_listings;
     mapping(address => uint256) private s_proceeds;
 
@@ -79,20 +95,22 @@ contract NftMarketplace is ReentrancyGuard {
 
     function buyItem(
         address nftAddress,
-        uint256 tokenId
+        uint256 tokenId,
+        uint256 listingId
     ) external payable isListed(nftAddress, tokenId) nonReentrant {
         Listing memory listedItem = s_listings[nftAddress][tokenId];
         if (msg.value < listedItem.price) {
             revert PriceNotMet(nftAddress, tokenId, listedItem.price);
         }
-
-        s_proceeds[listedItem.seller] += msg.value;
+        _removeFromActiveListings(listingId);
         delete (s_listings[nftAddress][tokenId]);
         IERC721(nftAddress).safeTransferFrom(
             listedItem.seller,
             msg.sender,
             tokenId
         );
+
+        s_proceeds[listedItem.seller] += msg.value;
         emit ItemBought(msg.sender, nftAddress, tokenId, listedItem.price);
     }
 
@@ -115,14 +133,33 @@ contract NftMarketplace is ReentrancyGuard {
         ) {
             revert NotApprovedForMarketplace();
         }
-        s_listings[nftAddress][tokenId] = Listing(price, msg.sender);
-        emit ItemListed(msg.sender, nftAddress, tokenId, price);
+        uint256 listingId;
+        if (deletedIndexes.length > 0) {
+            listingId = deletedIndexes[deletedIndexes.length - 1];
+            deletedIndexes.pop();
+        } else {
+            listingId = activeListings.length;
+            activeListings.push();
+        }
+        Listing memory newListing = Listing({
+            id: listingId,
+            seller: msg.sender,
+            nftContract: nftAddress,
+            tokenId: tokenId,
+            price: price,
+            active: true
+        });
+        s_listings[nftAddress][tokenId] = newListing;
+        activeListings[listingId] = newListing;
+
+        emit ItemListed(newListing.id, msg.sender, nftAddress, tokenId, price);
     }
 
     function updateListing(
         address nftAddress,
         uint256 tokenId,
-        uint256 newPrice
+        uint256 newPrice,
+        uint256 listingId
     )
         external
         isListed(nftAddress, tokenId)
@@ -134,19 +171,29 @@ contract NftMarketplace is ReentrancyGuard {
         }
 
         s_listings[nftAddress][tokenId].price = newPrice;
-        emit ItemListed(msg.sender, nftAddress, tokenId, newPrice);
+
+        activeListings[listingId].price = newPrice;
+        emit ListingUpdated(
+            s_listings[nftAddress][tokenId].id,
+            msg.sender,
+            nftAddress,
+            tokenId,
+            newPrice
+        );
     }
 
     function cancelListing(
         address nftAddress,
-        uint256 tokenId
+        uint256 tokenId,
+        uint256 listingId
     )
         external
         isOwner(nftAddress, tokenId, msg.sender)
         isListed(nftAddress, tokenId)
     {
+        _removeFromActiveListings(listingId);
         delete (s_listings[nftAddress][tokenId]);
-        emit ItemCanceled(msg.sender, nftAddress, tokenId);
+        emit ItemCanceled(msg.sender, nftAddress, tokenId, listingId);
     }
 
     function withdrawProceeds() external {
@@ -160,11 +207,34 @@ contract NftMarketplace is ReentrancyGuard {
         require(success, "Transfer failed");
     }
 
+    // internals
+
+    function _removeFromActiveListings(uint256 listingId) internal {
+        if (
+            listingId < activeListings.length &&
+            activeListings[listingId].active
+        ) {
+            activeListings[listingId] = Listing({
+                id: 0,
+                seller: address(0),
+                nftContract: address(0),
+                tokenId: 0,
+                price: 0,
+                active: false
+            });
+            deletedIndexes.push(listingId);
+        }
+    }
+
     function getListing(
         address nftAddress,
         uint256 tokenId
     ) external view returns (Listing memory) {
         return s_listings[nftAddress][tokenId];
+    }
+
+    function getActiveListings() external view returns (Listing[] memory) {
+        return activeListings;
     }
 
     function getProceeds(address seller) external view returns (uint256) {

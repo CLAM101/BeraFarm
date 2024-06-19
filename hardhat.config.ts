@@ -44,12 +44,11 @@ const config: HardhatUserConfig = {
     },
     customChains: [
       {
-        network: "artio_testnet",
-        chainId: 80085,
+        network: "Berachain bArtio",
+        chainId: 80084,
         urls: {
-          apiURL:
-            "https://api.routescan.io/v2/network/testnet/evm/80085/etherscan",
-          browserURL: "https://artio.beratrail.io",
+          apiURL: "https://bartio.rpc.berachain.com/",
+          browserURL: "https://bartio.beratrail.io/",
         },
       },
     ],
@@ -60,7 +59,7 @@ const config: HardhatUserConfig = {
       blockGasLimit: 30000000,
       allowBlocksWithSameTimestamp: true,
       forking: {
-        url: "https://quicknode-rpc.berachain.com/",
+        url: "https://bartio.rpc.berachain.com/",
       },
     },
     artio_testnet: {
