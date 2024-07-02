@@ -12,6 +12,7 @@ error NoProceeds();
 error NotOwner();
 error NotApprovedForMarketplace();
 error PriceMustBeAboveZero();
+error CollectionNotAllowed();
 
 contract NftMarketplace is ReentrancyGuard {
     struct Listing {
@@ -58,6 +59,11 @@ contract NftMarketplace is ReentrancyGuard {
     uint256[] private deletedIndexes;
     mapping(address => mapping(uint256 => Listing)) private s_listings;
     mapping(address => uint256) private s_proceeds;
+    address beraNftAddress;
+
+    constructor(address _nftAddress) {
+        beraNftAddress = _nftAddress;
+    }
 
     // Function modifiers
     modifier notListed(
@@ -68,6 +74,13 @@ contract NftMarketplace is ReentrancyGuard {
         Listing memory listing = s_listings[nftAddress][tokenId];
         if (listing.price > 0) {
             revert AlreadyListed(nftAddress, tokenId);
+        }
+        _;
+    }
+
+    modifier contractAllowed(address nftAddress) {
+        if (nftAddress != beraNftAddress) {
+            revert CollectionNotAllowed();
         }
         _;
     }
@@ -122,6 +135,7 @@ contract NftMarketplace is ReentrancyGuard {
         external
         notListed(nftAddress, tokenId, msg.sender)
         isOwner(nftAddress, tokenId, msg.sender)
+        contractAllowed(nftAddress)
     {
         if (price <= 0) {
             revert PriceMustBeAboveZero();
