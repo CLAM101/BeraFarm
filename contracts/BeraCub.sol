@@ -2,12 +2,13 @@
 pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Interfaces/IBERAFARM.sol";
 import "base64-sol/base64.sol";
 import "hardhat/console.sol";
 
-contract BeraCub is Ownable, ERC721URIStorage {
+contract BeraCub is Ownable, ERC721Enumerable, ERC721URIStorage {
     uint256 public tokenCounter;
     uint256 public maxSupply;
     bool public mintingOpen;
@@ -31,7 +32,7 @@ contract BeraCub is Ownable, ERC721URIStorage {
         uint256 _amount
     ) public onlyController {
         require(mintingOpen, "MintingNotOpen");
-        string memory tokenURI = formatTokenURI();
+        string memory formattedTokenURI = formatTokenURI();
 
         uint256 newTotalSupply = tokenCounter + _amount;
         require(newTotalSupply < maxSupply, "All Bera Cubs Minted :(");
@@ -39,7 +40,7 @@ contract BeraCub is Ownable, ERC721URIStorage {
         for (uint256 i = 0; i < _amount; i++) {
             _safeMint(_reciever, tokenCounter);
 
-            _setTokenURI(tokenCounter, tokenURI);
+            _setTokenURI(tokenCounter, formattedTokenURI);
             tokenCounter = tokenCounter + 1;
 
             emit MintedBeraCub(_reciever, tokenCounter);
@@ -56,7 +57,7 @@ contract BeraCub is Ownable, ERC721URIStorage {
         _;
     }
 
-    function totalSupply() public view returns (uint256) {
+    function totalSupply() public view virtual override returns (uint256) {
         return tokenCounter;
     }
 
@@ -88,6 +89,38 @@ contract BeraCub is Ownable, ERC721URIStorage {
         super._afterTokenTransfer(from, to, amount);
 
         beraFarm.updateClaimsOnTokenTransfer(from, to);
+    }
+
+    function tokenURI(
+        uint256 tokenId
+    )
+        public
+        view
+        virtual
+        override(ERC721, ERC721URIStorage)
+        returns (string memory)
+    {
+        return super.tokenURI(tokenId);
+    }
+
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(ERC721, ERC721Enumerable) returns (bool) {
+        return super.supportsInterface(interfaceId);
+    }
+
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 tokenId
+    ) internal virtual override(ERC721, ERC721Enumerable) {
+        super._beforeTokenTransfer(from, to, tokenId);
+    }
+
+    function _burn(
+        uint256 tokenId
+    ) internal virtual override(ERC721, ERC721URIStorage) {
+        super._burn(tokenId);
     }
 
     function formatTokenURI() public pure returns (string memory) {
