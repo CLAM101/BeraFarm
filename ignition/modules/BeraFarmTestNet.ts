@@ -28,9 +28,6 @@ export default buildModule("BeraFarmTestNet", (m): any => {
   const beraFarm = m.contract(
     "BeraFarm",
     [
-      honeyAddress,
-      bexAddress,
-      pool,
       treasury,
       dailyInterest,
       claimTaxFuzz,

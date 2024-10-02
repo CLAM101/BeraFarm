@@ -1,8 +1,8 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 import BeraCub from "./BeraCub";
-import FuzzToken from "./FuzzToken";
+import FuzzToken from "./FuzzTokenV2";
 import BeraFarmTestNet from "./BeraFarmTestNet";
-import FuzzArtifacts from "../../ignition/deployments/chain-80085/artifacts/FuzzToken#FuzzTokenContract.json";
+import FuzzArtifacts from "../../artifacts/contracts/FuzzTokenV2.sol/FuzzTokenV2.json";
 export default buildModule("ApplySettingsTestNet", (m): any => {
   const { beraCub } = m.useModule(BeraCub);
   const fuzzTokenAddress = m.getParameter("fuzzTokenAddress");

@@ -6,17 +6,18 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "./FuzzToken.sol";
+import "./FuzzTokenV2.sol";
 import "./Interfaces/IFUZZTOKEN.sol";
 import "./Interfaces/IBERACUB.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "hardhat/console.sol";
 
-//Interfaces
-interface IBEXCONTRACT {
-    function getLiquidity(
-        address pool
-    ) external view returns (address[] memory asset, uint256[] memory amounts);
+interface IQUERYCONTRACT {
+    function queryPrice(
+        address base,
+        address quote,
+        uint256 poolIdx
+    ) external view returns (uint128);
 }
 
 contract BeraFarm is Ownable, ReentrancyGuard {
@@ -51,12 +52,17 @@ contract BeraFarm is Ownable, ReentrancyGuard {
     event RewardsClaimed(address sender, uint256 rewardAfterTax, uint256 tax);
 
     //Addresses
+    address public treasury;
+    address public fuzzAddress;
+    address public honeyAddress = 0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03;
+
+    //Contracts
     IBERACUB public beraCubNftContract;
     IFUZZTOKEN public fuzz;
-    IERC20 private immutable honey;
-    IBEXCONTRACT private bexContract;
-    address public treasury;
-    address public pool;
+    IERC20 private immutable honeyContract =
+        IERC20(0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03);
+    IQUERYCONTRACT private immutable queryContract =
+        IQUERYCONTRACT(0x8685CE9Db06D40CBa73e3d09e6868FE476B5dC89);
 
     //Platfrom Settings
     bool public isLive = false;
@@ -111,9 +117,6 @@ contract BeraFarm is Ownable, ReentrancyGuard {
     mapping(address => Farmer) private farmers;
 
     constructor(
-        address _honey, //$Honey stablecoin
-        address _bexAddress, //address of Bex DEX
-        address _pool, //address of the pool
         address _treasury, //Wallet to hold fees and taxes
         uint256 _dailyInterest, //as a percentage
         uint256 _claimTaxFuzz, //As percentage
@@ -124,9 +127,6 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         uint256 _limitBeforeFullTokenTrading,
         uint256 _maxCubsPerWallet
     ) {
-        pool = _pool;
-        honey = IERC20(_honey);
-        bexContract = IBEXCONTRACT(_bexAddress);
         treasury = _treasury;
         dailyInterest = _dailyInterest;
         claimTaxFuzz = _claimTaxFuzz;
@@ -207,12 +207,17 @@ contract BeraFarm is Ownable, ReentrancyGuard {
             _amount
         );
 
-        uint256 honeyBalance = honey.balanceOf(msg.sender);
+        uint256 honeyBalance = honeyContract.balanceOf(msg.sender);
 
         require(honeyBalance >= transactionTotal, "Not enough $HONEY");
         //IMPORTANT fix transaction total its wrong
 
-        _transferFrom(honey, msg.sender, address(treasury), transactionTotal);
+        _transferFrom(
+            honeyContract,
+            msg.sender,
+            address(treasury),
+            transactionTotal
+        );
 
         beraCubNftContract.buyBeraCubs(msg.sender, _amount);
 
@@ -293,13 +298,18 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         uint256 honeyAmount = getBondCost();
         uint256 transactionTotal = honeyAmount.mul(_amount);
 
-        uint256 honeyBalance = honey.balanceOf(msg.sender);
+        uint256 honeyBalance = honeyContract.balanceOf(msg.sender);
 
         require(honeyBalance >= transactionTotal, "Not enough $HONEY");
 
         Farmer storage farmer = farmers[msg.sender];
 
-        _transferFrom(honey, msg.sender, address(treasury), transactionTotal);
+        _transferFrom(
+            honeyContract,
+            msg.sender,
+            address(treasury),
+            transactionTotal
+        );
 
         beraCubNftContract.buyBeraCubs(msg.sender, _amount);
 
@@ -504,30 +514,40 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         return false;
     }
 
+    function calculatePrice(
+        uint128 sqrtPriceX64
+    ) internal pure returns (uint256) {
+        // In Q64.64 format, the number is already a square root of the price
+        // We need to square it and scale it down by the fixed-point scale factor (2^64)
+
+        // Convert sqrtPriceX64 to a uint256 so we can perform 128-bit multiplication safely
+        uint256 sqrtPriceX64_256 = uint256(sqrtPriceX64);
+
+        // Square the value to get the base-to-quote price (but still in Q128.128 format)
+        uint256 priceX128 = sqrtPriceX64_256 * sqrtPriceX64_256;
+
+        // Convert from Q128.128 to a normal integer by shifting right 64 bits (2^64)
+        uint256 price = priceX128 >> 64;
+
+        return price; // This is the final base-to-quote price
+    }
+
     function getFuzzPrice() public view returns (uint256) {
-        (address[] memory assets, uint256[] memory amounts) = bexContract
-            .getLiquidity(pool);
+        uint128 fetchedPrice = queryContract.queryPrice(
+            honeyAddress,
+            fuzzAddress,
+            36000
+        );
 
-        Liquidity memory fetchedLiquidity = Liquidity({
-            asset: assets,
-            amounts: amounts
-        });
-
-        uint256 honeyToken = fetchedLiquidity.amounts[0];
-        uint256 fuzzToken = fetchedLiquidity.amounts[1];
-
-        require(honeyToken > 0 && fuzzToken > 0, "Reserves not available");
-
-        uint256 price;
-
-        uint256 convertedToken1 = fuzzToken.div(1e18);
-        price = honeyToken.div(convertedToken1);
+        uint256 price = calculatePrice(fetchedPrice);
 
         return price;
     }
 
     function getBondCost() public view returns (uint256) {
         uint256 tokenPrice = getFuzzPrice();
+
+        console.log("Token Price: ", tokenPrice);
 
         uint256 convertedmaxCompoundCostSoFar = maxCompoundCostSoFar.div(1e18);
 
@@ -602,8 +622,9 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         treasury = treasuryAddress;
     }
 
-    function setFuzzAddr(address fuzzAddress) public onlyOwner {
-        fuzz = IFUZZTOKEN(fuzzAddress);
+    function setFuzzAddr(address _fuzzAddress) public onlyOwner {
+        fuzz = IFUZZTOKEN(_fuzzAddress);
+        fuzzAddress = _fuzzAddress;
     }
 
     function setFuzzTax(uint256 _claimTaxFuzz) public onlyOwner {
@@ -661,10 +682,6 @@ contract BeraFarm is Ownable, ReentrancyGuard {
 
     function closeEmissionsOwner() external onlyOwner {
         emissionsClosedOwner = true;
-    }
-
-    function setPool(address _pool) external onlyOwner {
-        pool = _pool;
     }
 
     receive() external payable {}

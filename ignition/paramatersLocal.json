@@ -1,31 +1,21 @@
 {
-  "FuzzToken": {
-    "routerAddress": "0x0d5862FDbdd12490f9b4De54c236cff63B038074",
+  "FuzzTokenV2": {
     "maxFuzzSupply": "10000000000000000000000000",
     "initialFuzzSupply": "3000000000000000000000000"
   },
 
-  "AddLiquid": {
-    "routerAddress": "0x0d5862FDbdd12490f9b4De54c236cff63B038074",
-    "fuzzTokenLiquidAmount": "1000000000000000000000000",
-    "mockHoneyLiquidAmount": "40000000000000000000000"
-  },
-
-  "MockBex": {
-    "fuzzTokenLiquidAmount": "1000000000000000000000000",
-    "mockHoneyLiquidAmount": "40000000000000000000000",
-    "mockPoolAddress": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+  "AddLiquidModule": {
+    "fuzzTokenLiquidAmount": "46875000000000000000000000000000000000",
+    "honeyLiquidAmount": "75000000000000000000000",
+    "honeyAddress": "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03",
+    "crocSwapDexAddress": "0xAB827b1Cc3535A9e549EE387A6E9C3F02F481B49"
   },
 
   "BeraCub": {
     "maxCubSupply": 15000
   },
 
-  "MockHoney": {
-    "amountPerAddress": "10000000000000000000000000"
-  },
   "BeraFarm": {
-    "mockPoolAddress": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
     "treasuryAddress": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
     "dailyInterest": 60,
     "claimTaxFuzz": 10,

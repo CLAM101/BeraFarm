@@ -1,14 +1,8 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
-import MockHoney from "./MockHoney";
-import MockBex from "./MockBex";
 import BeraCub from "./BeraCub";
-import FuzzToken from "./FuzzToken";
-
-import { limitBeforeFullTokenTrading } from "../../scripts/deployEthTestNet";
+import FuzzToken from "./FuzzTokenV2";
 
 export default buildModule("BeraFarm", (m): any => {
-  const { mockHoney } = m.useModule(MockHoney);
-  const { mockBex } = m.useModule(MockBex);
   const { beraCub } = m.useModule(BeraCub);
   const { fuzzToken } = m.useModule(FuzzToken);
 
@@ -24,15 +18,12 @@ export default buildModule("BeraFarm", (m): any => {
   const limitBeforeFullTokenTrading = m.getParameter(
     "limitBeforeFullTokenTrading"
   );
-  const mockPoolAddress = m.getParameter("mockPoolAddress");
+
   const maxCubsPerWallet = m.getParameter("maxCubsPerWallet");
 
   const beraFarm = m.contract(
     "BeraFarm",
     [
-      mockHoney,
-      mockBex,
-      mockPoolAddress,
       treasury,
       dailyInterest,
       claimTaxFuzz,

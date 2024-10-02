@@ -1,6 +1,6 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 import MockHoney from "./MockHoney";
-import FuzzToken from "./FuzzToken";
+import FuzzToken from "./FuzzTokenV2";
 
 export default buildModule("MockBex", (m): any => {
   const { mockHoney } = m.useModule(MockHoney);
@@ -12,7 +12,13 @@ export default buildModule("MockBex", (m): any => {
 
   const mockBex = m.contract(
     "MockBex",
-    [mockHoney, fuzzToken, mockHoneyLiquidAmount, fuzzTokenLiquidAmount, mockPoolAddress],
+    [
+      mockHoney,
+      fuzzToken,
+      mockHoneyLiquidAmount,
+      fuzzTokenLiquidAmount,
+      mockPoolAddress,
+    ],
     {
       id: "MockBexContract",
     }

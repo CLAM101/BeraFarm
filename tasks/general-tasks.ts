@@ -1,6 +1,7 @@
 import { task } from "hardhat/config";
 import { bexABI } from "../test/testHelpers/ABI/bex-abi";
 import { ERC20ABI } from "../test/testHelpers/ABI/ERC20-abi";
+import { impersonateAccount } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 
 task(
   "transferToken",
@@ -238,17 +239,19 @@ task("generalViewCall", "get options of a pool from bex contract").setAction(
 );
 
 task(
-  "getLiquidity",
-  "get liquidity off a token pair from Bex contract"
+  "getPrice",
+  "Will fetch the current price of a token on the Bex contract"
 ).setAction(async (taskArgs, hre) => {
   try {
     const [deployer] = await hre.ethers.getSigners();
-    const bexAddress = "0x0d5862FDbdd12490f9b4De54c236cff63B038074";
+    const bexAddress = "0x8685CE9Db06D40CBa73e3d09e6868FE476B5dC89";
 
     const bexContract = new hre.ethers.Contract(bexAddress, bexABI, deployer);
 
-    const liquidity = await bexContract.getLiquidity(
-      "0xa88572F08f79D28b8f864350f122c1CC0AbB0d96"
+    const liquidity = await bexContract.queryPrice(
+      "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03",
+      "0x7507c1dc16935b82698e4c63f2746a2fcf994df8",
+      36000
     );
 
     console.log("Liquidity: ", liquidity);
@@ -382,6 +385,36 @@ task(
     });
 
     console.log("Transaction Reciept: ", reciept.logs);
+  } catch (err) {
+    console.log("Caught get transaction reciept error", err);
+  }
+});
+
+task(
+  "impersonateAndGetTokens",
+  "Impersonats a wallet and sends tokens to another wallet"
+).setAction(async (taskArgs, hre) => {
+  try {
+    const transferAmount = hre.ethers.parseUnits("1000000", "ether");
+
+    const address = "0x0BfdD60F31809fae4a4866EDBb4df31407651C2e";
+    await impersonateAccount(address);
+    const impersonatedSigner = await hre.ethers.getSigner(address);
+
+    const [owner] = await hre.ethers.getSigners();
+
+    const tokenContract = new hre.ethers.Contract(
+      "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03",
+      ERC20ABI,
+      impersonatedSigner
+    );
+
+    const tx = await tokenContract.transfer(owner, transferAmount);
+    await tx.wait();
+
+    const honeyBalance = await tokenContract.balanceOf(owner.address);
+
+    console.log("Honey Balance Owner: ", honeyBalance);
   } catch (err) {
     console.log("Caught get transaction reciept error", err);
   }

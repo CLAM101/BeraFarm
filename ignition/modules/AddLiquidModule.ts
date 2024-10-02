@@ -1,66 +1,112 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
-import FuzzToken from "./FuzzToken";
+import FuzzTokenV2 from "./FuzzTokenV2";
+import { ethers } from "hardhat";
 import HoneyABI from "../externalArtifacts/honey.json";
-import BexABI from "../externalArtifacts/bex.json";
+import crocSwapDexABI from "../externalArtifacts/crocSwapDexABI.json";
+import { encodeAbiParameters, parseAbiParameters } from "viem";
+import { keccak256 } from "ethers";
 
 export default buildModule("AddLiquidModule", (m): any => {
-  const { fuzzToken } = m.useModule(FuzzToken);
+  const { fuzzToken } = m.useModule(FuzzTokenV2);
+
+  const honeyAddress = m.getParameter("honeyAddress");
+  const crocSwapDexAddress = m.getParameter("crocSwapDexAddress");
 
   const fuzzTokenLiquidAmount = m.getParameter("fuzzTokenLiquidAmount");
   const honeyLiquidAmount = m.getParameter("honeyLiquidAmount");
 
-  const honeyAddress = m.getParameter("honeyAddress");
-  const bexAddress = m.getParameter("bexAddress");
   const ownerAccount = m.getAccount(0);
 
-  const bex = m.contractAt("Bex", BexABI, bexAddress);
-  const honey = m.contractAt("Honey", HoneyABI, honeyAddress);
-  const fuzzApprove = m.call(
-    fuzzToken,
-    "approve",
-    [bexAddress, fuzzTokenLiquidAmount],
-    {
-      from: ownerAccount,
-    }
-  );
-  const honeyApprove = m.call(
-    honey,
-    "approve",
-    [bexAddress, honeyLiquidAmount],
-    {
-      from: ownerAccount,
-    }
+  const honeyContract = m.contractAt("Honey", HoneyABI, honeyAddress);
+  m.call(fuzzToken, "approve", [crocSwapDexAddress, fuzzTokenLiquidAmount], {
+    from: ownerAccount,
+  });
+  m.call(honeyContract, "approve", [crocSwapDexAddress, honeyLiquidAmount], {
+    from: ownerAccount,
+  });
+
+  const poolIdx = 36000;
+  const price = "1600000000000000000";
+
+  const abiCoder = new ethers.AbiCoder();
+  const initPoolCalldata = abiCoder.encode(
+    ["address", "address", "uint256", "uint128"],
+    [fuzzToken, "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03", poolIdx, price]
   );
 
-  const pool: any = m.call(
-    bex,
-    "createPool",
-    [
-      "HoneyFuzzPool",
-      [honeyAddress, fuzzToken],
-      [honeyLiquidAmount, fuzzTokenLiquidAmount],
-      "weighted",
+  // Define the parameters for minting liquidity
+  const mintCode = 31; // Example code for minting liquidity fixed in base tokens
+  const bidTick = 0; // Example bid tick
+  const askTick = 0; // Example ask tick
+  const qty = "46875000000000000000"; // Example quantity
+  const limitLower = "1500000000000000000"; // Example lower limit
+  const limitHigher = "1700000000000000000"; // Example upper limit
+  const settleFlags = 0; // Example settle flags
 
-      [
-        { asset: honeyAddress, weight: 50 },
-        { asset: fuzzToken, weight: 50 },
-      ],
-      "3000000000",
-    ],
-    { from: ownerAccount, after: [honeyApprove, fuzzApprove] }
-  );
+  const getCrocErc20LpAddress = async (
+    base: string,
+    quote: string,
+    dexAddress: string
+  ) => {
+    const salt = ethers.keccak256(
+      ethers.solidityPacked(["address", "address"], [base, quote])
+    );
+    const factory = await ethers.getContractFactory("CrocLpErc20");
+    const creationCode = factory.bytecode;
+    const initCodeHash = keccak256(creationCode);
+    const create2Address = ethers.getCreate2Address(
+      dexAddress,
+      salt,
+      initCodeHash
+    );
+    return create2Address;
+  };
 
-  // const addedLiquid = m.call(
-  //   bex,
-  //   "addLiquidity",
+  // const lpConduit = getCrocErc20LpAddress(
+  //   fuzzToken,
+  //   honeyAddress,
+  //   crocSwapDexAddress
+  // );
+  // // Encode the calldata for minting liquidity
+  // const mintCalldata = abiCoder.encode(
   //   [
-  //     pool,
-  //     ownerAccount,
-  //     [honeyAddress, fuzzToken],
-  //     [honeyLiquidAmount, fuzzTokenLiquidAmount],
+  //     "uint8",
+  //     "address",
+  //     "address",
+  //     "uint256",
+  //     "int24",
+  //     "int24",
+  //     "uint128",
+  //     "uint128",
+  //     "uint128",
+  //     "uint8",
+  //     "address",
   //   ],
-  //   { from: ownerAccount, after: pool }
+  //   [
+  //     mintCode,
+  //     fuzzToken,
+  //     honeyAddress,
+  //     poolIdx,
+  //     bidTick,
+  //     askTick,
+  //     qty,
+  //     limitLower,
+  //     limitHigher,
+  //     settleFlags,
+  //     lpConduit,
+  //   ]
   // );
 
-  return { bex, pool };
+  // const multiPathArgs = [2, 3, initPoolCalldata, 128, mintCalldata];
+
+  // const multiCmd = encodeAbiParameters(
+  //   parseAbiParameters("uint8, uint8, bytes, uint8, bytes"),
+  //   multiPathArgs as any[5]
+  // );
+
+  // const crockSwapDex = m.contractAt("Bex", crocSwapDexABI, crocSwapDexAddress);
+
+  // const multicallResult = m.call(crockSwapDex, "userCmd", [6, multiCmd]);
+
+  return { result: "" };
 });

@@ -1,7 +1,7 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 import BeraCub from "./BeraCub";
 
-import FuzzToken from "./FuzzToken";
+import FuzzToken from "./FuzzTokenV2";
 import AddLiquidModule from "./AddLiquidModule";
 import BeraFarmTestNet from "./BeraFarmTestNet";
 import ApplySettingsTestNet from "./ApplySettingsTestNet";

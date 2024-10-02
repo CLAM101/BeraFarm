@@ -1,4 +1,4 @@
-import { HardhatUserConfig, task } from "hardhat/config";
+import { HardhatUserConfig } from "hardhat/config";
 import * as dotenv from "dotenv";
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomicfoundation/hardhat-verify";
@@ -55,17 +55,26 @@ const config: HardhatUserConfig = {
   },
   networks: {
     hardhat: {
+      chains: {
+        80084: {
+          hardforkHistory: {
+            berlin: 2913755,
+            london: 3913755,
+          },
+        },
+      },
       chainId: 1337,
       blockGasLimit: 30000000,
       allowBlocksWithSameTimestamp: true,
       forking: {
         url: "https://bartio.rpc.berachain.com/",
+        enabled: true,
       },
     },
     artio_testnet: {
       chainId: parseInt(`${process.env.CHAIN_ID}`),
       url: `${process.env.RPC_URL || ""}`,
-      accounts: [deployerPrivateKey, treasuryPrivateKey],
+      accounts: [`${deployerPrivateKey}`, `${treasuryPrivateKey}`],
     },
 
     sepolia: {

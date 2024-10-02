@@ -1,5 +1,5 @@
 {
-  "FuzzToken": {
+  "FuzzTokenV2": {
     "maxFuzzSupply": "10000000000000000000000000",
     "initialFuzzSupply": "3000000000000000000000000"
   },
@@ -28,5 +28,12 @@
     "limitBeforeEmissions": 2,
     "limitBeforeFullTokenTrading": 5,
     "maxCubsPerWallet": 20
+  },
+
+  "AddLiquidModule": {
+    "fuzzTokenLiquidAmount": "10000000000000000000000",
+    "honeyLiquidAmount": "400000000000000000000",
+    "honeyAddress": "0x7EeCA4205fF31f947EdBd49195a7A88E6A91161B",
+    "bexAddress": "0x0d5862FDbdd12490f9b4De54c236cff63B038074"
   }
 }

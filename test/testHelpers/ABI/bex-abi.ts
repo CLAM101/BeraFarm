@@ -48,6 +48,35 @@ export const bexABI = [
     ],
     stateMutability: "payable",
   },
+
+  {
+    type: "function",
+    name: "queryPrice",
+    inputs: [
+      {
+        name: "base",
+        type: "address",
+        internalType: "address",
+      },
+      {
+        name: "quote",
+        type: "address",
+        internalType: "address",
+      },
+      {
+        name: "poolIdx",
+        type: "uint256",
+        internalType: "uint256",
+      },
+    ],
+    outputs: [
+      {
+        type: "uint128",
+        internalType: "uint128",
+      },
+    ],
+    stateMutability: "view",
+  },
   {
     type: "function",
     name: "batchSwap",
