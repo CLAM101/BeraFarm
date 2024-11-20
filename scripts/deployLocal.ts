@@ -4,6 +4,8 @@ import paramatersLocal from "../ignition/paramatersLocal.json";
 import { ethers } from "hardhat";
 import { keccak256 } from "ethers";
 import { Addressable } from "ethers";
+import { encodeAbiParameters, parseAbiParameters } from "viem";
+import { bexABI } from "../test/testHelpers/ABI/bex-abi";
 
 async function getCrocErc20LpAddress(
   base: string | Addressable,
@@ -44,7 +46,50 @@ async function main() {
     bexAddress
   );
 
+  const [owner] = await hre.ethers.getSigners();
+
   console.log("lp conduit", lpConduit);
+
+  const dexContract = new hre.ethers.Contract(bexAddress, bexABI, owner);
+
+  const initPoolCallData = encodeAbiParameters(
+    parseAbiParameters("uint8, address, address, uint256, uint128"),
+    [71, fuzzToken.target, honeyAddress, 36000, 160000000000000] as any[5]
+  );
+
+  const mintCalldata = encodeAbiParameters(
+    parseAbiParameters(
+      "uint8, address, address, uint256, int24, int24, uint128, uint128, uint128, uint8, address"
+    ),
+    [
+      31,
+      fuzzToken.target,
+      honeyAddress,
+      36000,
+      0,
+      0,
+      8223039985483627,
+      160000000000000,
+      160000000000000,
+      0,
+      lpConduit,
+    ] as any[2]
+  );
+
+  const multiPathArgs = [2, 3, initPoolCallData, 128, mintCalldata];
+
+  const multiCmd = encodeAbiParameters(
+    parseAbiParameters("uint8, uint8, bytes, uint8, bytes"),
+    multiPathArgs as any[5]
+  );
+
+  console.log("multiCmd", multiCmd);
+
+  const createPoolAddLiquidTx = await dexContract.userCmd(6, multiCmd);
+
+  const finalizePoolTx = await createPoolAddLiquidTx.wait();
+
+  console.log("createPoolAddLiquidTx", finalizePoolTx);
 }
 
 main().catch(console.error);

@@ -1,57 +1,77 @@
 export const bexABI = [
   {
-    type: "function",
-    name: "addLiquidity",
+    type: "constructor",
     inputs: [
       {
-        name: "pool",
+        name: "initialWbera",
         type: "address",
         internalType: "address",
       },
+    ],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "receive",
+    stateMutability: "payable",
+  },
+  {
+    type: "function",
+    name: "acceptCrocDex",
+    inputs: [],
+    outputs: [
       {
-        name: "receiver",
-        type: "address",
-        internalType: "address",
+        name: "",
+        type: "bool",
+        internalType: "bool",
+      },
+    ],
+    stateMutability: "pure",
+  },
+  {
+    type: "function",
+    name: "protocolCmd",
+    inputs: [
+      {
+        name: "callpath",
+        type: "uint16",
+        internalType: "uint16",
       },
       {
-        name: "assetsIn",
-        type: "address[]",
-        internalType: "address[]",
+        name: "cmd",
+        type: "bytes",
+        internalType: "bytes",
       },
       {
-        name: "amountsIn",
-        type: "uint256[]",
-        internalType: "uint256[]",
+        name: "sudo",
+        type: "bool",
+        internalType: "bool",
+      },
+    ],
+    outputs: [],
+    stateMutability: "payable",
+  },
+  {
+    type: "function",
+    name: "readSlot",
+    inputs: [
+      {
+        name: "slot",
+        type: "uint256",
+        internalType: "uint256",
       },
     ],
     outputs: [
       {
-        name: "shares",
-        type: "address[]",
-        internalType: "address[]",
-      },
-      {
-        name: "shareAmounts",
-        type: "uint256[]",
-        internalType: "uint256[]",
-      },
-      {
-        name: "liquidity",
-        type: "address[]",
-        internalType: "address[]",
-      },
-      {
-        name: "liquidityAmounts",
-        type: "uint256[]",
-        internalType: "uint256[]",
+        name: "data",
+        type: "uint256",
+        internalType: "uint256",
       },
     ],
-    stateMutability: "payable",
+    stateMutability: "view",
   },
-
   {
     type: "function",
-    name: "queryPrice",
+    name: "swap",
     inputs: [
       {
         name: "base",
@@ -68,160 +88,135 @@ export const bexABI = [
         type: "uint256",
         internalType: "uint256",
       },
-    ],
-    outputs: [
       {
+        name: "isBuy",
+        type: "bool",
+        internalType: "bool",
+      },
+      {
+        name: "inBaseQty",
+        type: "bool",
+        internalType: "bool",
+      },
+      {
+        name: "qty",
         type: "uint128",
         internalType: "uint128",
       },
-    ],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "batchSwap",
-    inputs: [
       {
-        name: "kind",
+        name: "tip",
+        type: "uint16",
+        internalType: "uint16",
+      },
+      {
+        name: "limitPrice",
+        type: "uint128",
+        internalType: "uint128",
+      },
+      {
+        name: "minOut",
+        type: "uint128",
+        internalType: "uint128",
+      },
+      {
+        name: "reserveFlags",
         type: "uint8",
-        internalType: "enum IERC20DexModule.SwapKind",
-      },
-      {
-        name: "swaps",
-        type: "tuple[]",
-        internalType: "struct IERC20DexModule.BatchSwapStep[]",
-        components: [
-          {
-            name: "poolId",
-            type: "address",
-            internalType: "address",
-          },
-          {
-            name: "assetIn",
-            type: "address",
-            internalType: "address",
-          },
-          {
-            name: "amountIn",
-            type: "uint256",
-            internalType: "uint256",
-          },
-          {
-            name: "assetOut",
-            type: "address",
-            internalType: "address",
-          },
-          {
-            name: "amountOut",
-            type: "uint256",
-            internalType: "uint256",
-          },
-          {
-            name: "userData",
-            type: "bytes",
-            internalType: "bytes",
-          },
-        ],
-      },
-      {
-        name: "deadline",
-        type: "uint256",
-        internalType: "uint256",
+        internalType: "uint8",
       },
     ],
     outputs: [
       {
-        name: "assets",
-        type: "address[]",
-        internalType: "address[]",
+        name: "baseFlow",
+        type: "int128",
+        internalType: "int128",
       },
       {
-        name: "amounts",
-        type: "uint256[]",
-        internalType: "uint256[]",
+        name: "quoteFlow",
+        type: "int128",
+        internalType: "int128",
       },
     ],
     stateMutability: "payable",
   },
   {
     type: "function",
-    name: "createPool",
+    name: "userCmd",
     inputs: [
       {
-        name: "name",
-        type: "string",
-        internalType: "string",
+        name: "callpath",
+        type: "uint16",
+        internalType: "uint16",
       },
       {
-        name: "assetsIn",
-        type: "address[]",
-        internalType: "address[]",
-      },
-      {
-        name: "amountsIn",
-        type: "uint256[]",
-        internalType: "uint256[]",
-      },
-      {
-        name: "poolType",
-        type: "string",
-        internalType: "string",
-      },
-      {
-        name: "options",
-        type: "tuple",
-        internalType: "struct IERC20DexModule.PoolOptions",
-        components: [
-          {
-            name: "weights",
-            type: "tuple[]",
-            internalType: "struct IERC20DexModule.AssetWeight[]",
-            components: [
-              {
-                name: "asset",
-                type: "address",
-                internalType: "address",
-              },
-              {
-                name: "weight",
-                type: "uint256",
-                internalType: "uint256",
-              },
-            ],
-          },
-          {
-            name: "swapFee",
-            type: "uint256",
-            internalType: "uint256",
-          },
-        ],
+        name: "cmd",
+        type: "bytes",
+        internalType: "bytes",
       },
     ],
     outputs: [
       {
         name: "",
-        type: "address",
-        internalType: "address",
+        type: "bytes",
+        internalType: "bytes",
       },
     ],
     stateMutability: "payable",
   },
   {
     type: "function",
-    name: "getExchangeRate",
+    name: "userCmdRelayer",
     inputs: [
       {
-        name: "pool",
-        type: "address",
-        internalType: "address",
+        name: "callpath",
+        type: "uint16",
+        internalType: "uint16",
       },
       {
-        name: "baseAsset",
-        type: "address",
-        internalType: "address",
+        name: "cmd",
+        type: "bytes",
+        internalType: "bytes",
       },
       {
-        name: "quoteAsset",
+        name: "conds",
+        type: "bytes",
+        internalType: "bytes",
+      },
+      {
+        name: "relayerTip",
+        type: "bytes",
+        internalType: "bytes",
+      },
+      {
+        name: "signature",
+        type: "bytes",
+        internalType: "bytes",
+      },
+    ],
+    outputs: [
+      {
+        name: "output",
+        type: "bytes",
+        internalType: "bytes",
+      },
+    ],
+    stateMutability: "payable",
+  },
+  {
+    type: "function",
+    name: "userCmdRouter",
+    inputs: [
+      {
+        name: "callpath",
+        type: "uint16",
+        internalType: "uint16",
+      },
+      {
+        name: "cmd",
+        type: "bytes",
+        internalType: "bytes",
+      },
+      {
+        name: "client",
         type: "address",
         internalType: "address",
       },
@@ -229,645 +224,66 @@ export const bexABI = [
     outputs: [
       {
         name: "",
-        type: "uint256",
-        internalType: "uint256",
+        type: "bytes",
+        internalType: "bytes",
       },
     ],
-    stateMutability: "view",
+    stateMutability: "payable",
   },
   {
     type: "function",
-    name: "getLiquidity",
-    inputs: [
-      {
-        name: "pool",
-        type: "address",
-        internalType: "address",
-      },
-    ],
-    outputs: [
-      {
-        name: "asset",
-        type: "address[]",
-        internalType: "address[]",
-      },
-      {
-        name: "amounts",
-        type: "uint256[]",
-        internalType: "uint256[]",
-      },
-    ],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "getPoolName",
-    inputs: [
-      {
-        name: "pool",
-        type: "address",
-        internalType: "address",
-      },
-    ],
+    name: "wbera",
+    inputs: [],
     outputs: [
       {
         name: "",
-        type: "string",
-        internalType: "string",
+        type: "address",
+        internalType: "address",
       },
     ],
     stateMutability: "view",
   },
   {
-    type: "function",
-    name: "getPoolOptions",
+    type: "event",
+    name: "CrocKnockoutCross",
     inputs: [
       {
         name: "pool",
-        type: "address",
-        internalType: "address",
+        type: "bytes32",
+        indexed: true,
+        internalType: "bytes32",
+      },
+      {
+        name: "tick",
+        type: "int24",
+        indexed: true,
+        internalType: "int24",
+      },
+      {
+        name: "isBid",
+        type: "bool",
+        indexed: false,
+        internalType: "bool",
+      },
+      {
+        name: "pivotTime",
+        type: "uint32",
+        indexed: false,
+        internalType: "uint32",
+      },
+      {
+        name: "feeMileage",
+        type: "uint64",
+        indexed: false,
+        internalType: "uint64",
+      },
+      {
+        name: "commitEntropy",
+        type: "uint160",
+        indexed: false,
+        internalType: "uint160",
       },
     ],
-    outputs: [
-      {
-        name: "",
-        type: "tuple",
-        internalType: "struct IERC20DexModule.PoolOptions",
-        components: [
-          {
-            name: "weights",
-            type: "tuple[]",
-            internalType: "struct IERC20DexModule.AssetWeight[]",
-            components: [
-              {
-                name: "asset",
-                type: "address",
-                internalType: "address",
-              },
-              {
-                name: "weight",
-                type: "uint256",
-                internalType: "uint256",
-              },
-            ],
-          },
-          {
-            name: "swapFee",
-            type: "uint256",
-            internalType: "uint256",
-          },
-        ],
-      },
-    ],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "getPreviewAddLiquidityNoSwap",
-    inputs: [
-      {
-        name: "pool",
-        type: "address",
-        internalType: "address",
-      },
-      {
-        name: "assets",
-        type: "address[]",
-        internalType: "address[]",
-      },
-      {
-        name: "amounts",
-        type: "uint256[]",
-        internalType: "uint256[]",
-      },
-    ],
-    outputs: [
-      {
-        name: "shares",
-        type: "address[]",
-        internalType: "address[]",
-      },
-      {
-        name: "shareAmounts",
-        type: "uint256[]",
-        internalType: "uint256[]",
-      },
-      {
-        name: "liqOut",
-        type: "address[]",
-        internalType: "address[]",
-      },
-      {
-        name: "liquidityAmounts",
-        type: "uint256[]",
-        internalType: "uint256[]",
-      },
-    ],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "getPreviewAddLiquidityStaticPrice",
-    inputs: [
-      {
-        name: "pool",
-        type: "address",
-        internalType: "address",
-      },
-      {
-        name: "liquidity",
-        type: "address[]",
-        internalType: "address[]",
-      },
-      {
-        name: "amounts",
-        type: "uint256[]",
-        internalType: "uint256[]",
-      },
-    ],
-    outputs: [
-      {
-        name: "shares",
-        type: "address[]",
-        internalType: "address[]",
-      },
-      {
-        name: "shareAmounts",
-        type: "uint256[]",
-        internalType: "uint256[]",
-      },
-      {
-        name: "liqOut",
-        type: "address[]",
-        internalType: "address[]",
-      },
-      {
-        name: "liquidityAmounts",
-        type: "uint256[]",
-        internalType: "uint256[]",
-      },
-    ],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "getPreviewBatchSwap",
-    inputs: [
-      {
-        name: "kind",
-        type: "uint8",
-        internalType: "enum IERC20DexModule.SwapKind",
-      },
-      {
-        name: "swaps",
-        type: "tuple[]",
-        internalType: "struct IERC20DexModule.BatchSwapStep[]",
-        components: [
-          {
-            name: "poolId",
-            type: "address",
-            internalType: "address",
-          },
-          {
-            name: "assetIn",
-            type: "address",
-            internalType: "address",
-          },
-          {
-            name: "amountIn",
-            type: "uint256",
-            internalType: "uint256",
-          },
-          {
-            name: "assetOut",
-            type: "address",
-            internalType: "address",
-          },
-          {
-            name: "amountOut",
-            type: "uint256",
-            internalType: "uint256",
-          },
-          {
-            name: "userData",
-            type: "bytes",
-            internalType: "bytes",
-          },
-        ],
-      },
-    ],
-    outputs: [
-      {
-        name: "asset",
-        type: "address",
-        internalType: "address",
-      },
-      {
-        name: "amount",
-        type: "uint256",
-        internalType: "uint256",
-      },
-    ],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "getPreviewBurnShares",
-    inputs: [
-      {
-        name: "pool",
-        type: "address",
-        internalType: "address",
-      },
-      {
-        name: "asset",
-        type: "address",
-        internalType: "address",
-      },
-      {
-        name: "amount",
-        type: "uint256",
-        internalType: "uint256",
-      },
-    ],
-    outputs: [
-      {
-        name: "assets",
-        type: "address[]",
-        internalType: "address[]",
-      },
-      {
-        name: "amounts",
-        type: "uint256[]",
-        internalType: "uint256[]",
-      },
-    ],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "getPreviewSharesForLiquidity",
-    inputs: [
-      {
-        name: "pool",
-        type: "address",
-        internalType: "address",
-      },
-      {
-        name: "assets",
-        type: "address[]",
-        internalType: "address[]",
-      },
-      {
-        name: "amounts",
-        type: "uint256[]",
-        internalType: "uint256[]",
-      },
-    ],
-    outputs: [
-      {
-        name: "shares",
-        type: "address[]",
-        internalType: "address[]",
-      },
-      {
-        name: "shareAmounts",
-        type: "uint256[]",
-        internalType: "uint256[]",
-      },
-      {
-        name: "liquidity",
-        type: "address[]",
-        internalType: "address[]",
-      },
-      {
-        name: "liquidityAmounts",
-        type: "uint256[]",
-        internalType: "uint256[]",
-      },
-    ],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "getPreviewSharesForSingleSidedLiquidityRequest",
-    inputs: [
-      {
-        name: "pool",
-        type: "address",
-        internalType: "address",
-      },
-      {
-        name: "asset",
-        type: "address",
-        internalType: "address",
-      },
-      {
-        name: "amount",
-        type: "uint256",
-        internalType: "uint256",
-      },
-    ],
-    outputs: [
-      {
-        name: "assets",
-        type: "address[]",
-        internalType: "address[]",
-      },
-      {
-        name: "amounts",
-        type: "uint256[]",
-        internalType: "uint256[]",
-      },
-    ],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "getPreviewSwapExact",
-    inputs: [
-      {
-        name: "kind",
-        type: "uint8",
-        internalType: "enum IERC20DexModule.SwapKind",
-      },
-      {
-        name: "pool",
-        type: "address",
-        internalType: "address",
-      },
-      {
-        name: "baseAsset",
-        type: "address",
-        internalType: "address",
-      },
-      {
-        name: "baseAssetAmount",
-        type: "uint256",
-        internalType: "uint256",
-      },
-      {
-        name: "quoteAsset",
-        type: "address",
-        internalType: "address",
-      },
-    ],
-    outputs: [
-      {
-        name: "asset",
-        type: "address",
-        internalType: "address",
-      },
-      {
-        name: "amount",
-        type: "uint256",
-        internalType: "uint256",
-      },
-    ],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "getRemoveLiquidityExactAmountOut",
-    inputs: [
-      {
-        name: "pool",
-        type: "address",
-        internalType: "address",
-      },
-      {
-        name: "assetIn",
-        type: "address",
-        internalType: "address",
-      },
-      {
-        name: "assetAmount",
-        type: "uint256",
-        internalType: "uint256",
-      },
-    ],
-    outputs: [
-      {
-        name: "assets",
-        type: "address[]",
-        internalType: "address[]",
-      },
-      {
-        name: "amounts",
-        type: "uint256[]",
-        internalType: "uint256[]",
-      },
-    ],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "getRemoveLiquidityOneSideOut",
-    inputs: [
-      {
-        name: "pool",
-        type: "address",
-        internalType: "address",
-      },
-      {
-        name: "assetOut",
-        type: "address",
-        internalType: "address",
-      },
-      {
-        name: "sharesIn",
-        type: "uint256",
-        internalType: "uint256",
-      },
-    ],
-    outputs: [
-      {
-        name: "assets",
-        type: "address[]",
-        internalType: "address[]",
-      },
-      {
-        name: "amounts",
-        type: "uint256[]",
-        internalType: "uint256[]",
-      },
-    ],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "getTotalShares",
-    inputs: [
-      {
-        name: "pool",
-        type: "address",
-        internalType: "address",
-      },
-    ],
-    outputs: [
-      {
-        name: "assets",
-        type: "address[]",
-        internalType: "address[]",
-      },
-      {
-        name: "amounts",
-        type: "uint256[]",
-        internalType: "uint256[]",
-      },
-    ],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "removeLiquidityBurningShares",
-    inputs: [
-      {
-        name: "pool",
-        type: "address",
-        internalType: "address",
-      },
-      {
-        name: "withdrawAddress",
-        type: "address",
-        internalType: "address",
-      },
-      {
-        name: "assetIn",
-        type: "address",
-        internalType: "address",
-      },
-      {
-        name: "amountIn",
-        type: "uint256",
-        internalType: "uint256",
-      },
-    ],
-    outputs: [
-      {
-        name: "liquidity",
-        type: "address[]",
-        internalType: "address[]",
-      },
-      {
-        name: "liquidityAmounts",
-        type: "uint256[]",
-        internalType: "uint256[]",
-      },
-    ],
-    stateMutability: "payable",
-  },
-  {
-    type: "function",
-    name: "removeLiquidityExactAmount",
-    inputs: [
-      {
-        name: "pool",
-        type: "address",
-        internalType: "address",
-      },
-      {
-        name: "withdrawAddress",
-        type: "address",
-        internalType: "address",
-      },
-      {
-        name: "assetOut",
-        type: "address",
-        internalType: "address",
-      },
-      {
-        name: "amountOut",
-        type: "uint256",
-        internalType: "uint256",
-      },
-      {
-        name: "sharesIn",
-        type: "address",
-        internalType: "address",
-      },
-      {
-        name: "maxSharesIn",
-        type: "uint256",
-        internalType: "uint256",
-      },
-    ],
-    outputs: [
-      {
-        name: "shares",
-        type: "address[]",
-        internalType: "address[]",
-      },
-      {
-        name: "shareAmounts",
-        type: "uint256[]",
-        internalType: "uint256[]",
-      },
-      {
-        name: "liquidity",
-        type: "address[]",
-        internalType: "address[]",
-      },
-      {
-        name: "liquidityAmounts",
-        type: "uint256[]",
-        internalType: "uint256[]",
-      },
-    ],
-    stateMutability: "payable",
-  },
-  {
-    type: "function",
-    name: "swap",
-    inputs: [
-      {
-        name: "kind",
-        type: "uint8",
-        internalType: "enum IERC20DexModule.SwapKind",
-      },
-      {
-        name: "poolId",
-        type: "address",
-        internalType: "address",
-      },
-      {
-        name: "assetIn",
-        type: "address",
-        internalType: "address",
-      },
-      {
-        name: "amountIn",
-        type: "uint256",
-        internalType: "uint256",
-      },
-      {
-        name: "assetOut",
-        type: "address",
-        internalType: "address",
-      },
-      {
-        name: "amountOut",
-        type: "uint256",
-        internalType: "uint256",
-      },
-      {
-        name: "deadline",
-        type: "uint256",
-        internalType: "uint256",
-      },
-    ],
-    outputs: [
-      {
-        name: "assets",
-        type: "address[]",
-        internalType: "address[]",
-      },
-      {
-        name: "amounts",
-        type: "uint256[]",
-        internalType: "uint256[]",
-      },
-    ],
-    stateMutability: "payable",
+    anonymous: false,
   },
 ];
