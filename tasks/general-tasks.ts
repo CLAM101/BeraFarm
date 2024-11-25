@@ -2,6 +2,19 @@ import { task } from "hardhat/config";
 import { bexABI } from "../test/testHelpers/ABI/bex-abi";
 import { ERC20ABI } from "../test/testHelpers/ABI/ERC20-abi";
 import { impersonateAccount } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+import { encodeAbiParameters, parseAbiParameters } from "viem";
+import { BigNumberish } from "ethers";
+
+function toCrocPrice(price: number | BigNumberish): BigNumberish {
+  return typeof price === "number" ? toSqrtPrice(price) : price;
+}
+
+export function toSqrtPrice(price: number) {
+  const PRECISION = 100000000;
+  const Q_64 = BigInt(2) ** BigInt(64);
+  let sqrtFixed = Math.round(Math.sqrt(price) * PRECISION);
+  return (BigInt(sqrtFixed) * Q_64) / BigInt(PRECISION);
+}
 
 task(
   "transferToken",
@@ -326,7 +339,7 @@ task(
   "Approves spend with the Honey contract on testnet"
 ).setAction(async (taskArgs, hre) => {
   try {
-    const farmAddress = "0x9A9f2CCfdE556A7E9Ff0848998Aa4a0CFD8863AE";
+    const farmAddress = "0x3b63985303d5636f6b60315b45531d176af2c399";
 
     const [owner] = await hre.ethers.getSigners();
 
@@ -339,9 +352,9 @@ task(
       signer
     );
 
-    const tokenAddress = "0x9A676e781A523b5d0C0e43731313A708CB607508";
+    const tokenAddress = "0xa84E50408f9dC576309102da03Ed8D6A82b7869B";
 
-    const tokenArtifacts = await hre.artifacts.readArtifact("FuzzToken");
+    const tokenArtifacts = await hre.artifacts.readArtifact("FuzzTokenV2");
 
     const tokenContract = new hre.ethers.Contract(
       tokenAddress,
@@ -415,6 +428,127 @@ task(
     const honeyBalance = await tokenContract.balanceOf(owner.address);
 
     console.log("Honey Balance Owner: ", honeyBalance);
+  } catch (err) {
+    console.log("Caught get transaction reciept error", err);
+  }
+});
+
+task(
+  "initPool",
+  "Impersonats a wallet and sends tokens to another wallet"
+).setAction(async (taskArgs, hre) => {
+  try {
+    const honeyAddress = "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03";
+    const bexAddress = "0xAB827b1Cc3535A9e549EE387A6E9C3F02F481B49";
+    const fuzzTokenAddress = "0xa84E50408f9dC576309102da03Ed8D6A82b7869B";
+
+    const [owner] = await hre.ethers.getSigners();
+
+    const dexContract = new hre.ethers.Contract(bexAddress, bexABI, owner);
+
+    const honeyContract = new hre.ethers.Contract(
+      honeyAddress,
+      ERC20ABI,
+      owner
+    );
+
+    const fuzzTokenContract = new hre.ethers.Contract(
+      fuzzTokenAddress,
+      ERC20ABI,
+      owner
+    );
+
+    const approvalTxHoney = await honeyContract.approve(
+      bexAddress,
+      "4000000000000000000000000"
+    );
+    const honeyApprove = await approvalTxHoney.wait();
+
+    const honeyAllwoance = await honeyContract.allowance(
+      owner.address,
+      bexAddress
+    );
+
+    const honeyTokenBalance = await honeyContract.balanceOf(owner.address);
+
+    console.log(
+      "Honey Allow : ",
+      hre.ethers.formatEther(honeyAllwoance),
+      "Honey Balance: ",
+      hre.ethers.formatEther(honeyTokenBalance)
+    );
+
+    const approvalTxFuzz = await fuzzTokenContract.approve(
+      bexAddress,
+      "100000000000000000000000"
+    );
+
+    const fuzzApprove = await approvalTxFuzz.wait();
+
+    const fuzzAllowance = await fuzzTokenContract.allowance(
+      owner.address,
+      bexAddress
+    );
+
+    const fuzzTokenBalance = await fuzzTokenContract.balanceOf(owner.address);
+
+    console.log(
+      "Fuzz Allow : ",
+      hre.ethers.formatEther(fuzzAllowance),
+      "Fuzz Balance: ",
+      hre.ethers.formatEther(fuzzTokenBalance)
+    );
+
+    const abiCoder = new hre.ethers.AbiCoder();
+
+    let takeCmd = abiCoder.encode(["uint8", "uint8"], [114, 0]);
+
+    await dexContract.protocolCmd(0, takeCmd, false);
+
+    const subcode = 71; // uint8
+    const base = fuzzTokenAddress; // address
+    const quote = honeyAddress; // address
+    const poolIdx = 36000; // uint256
+    const price = toCrocPrice(2);
+    // uint128 (Q64.64 representation
+
+    console.log("Price: ", price);
+
+    // Use ethers.utils.defaultAbiCoder to encode parameters
+
+    const encodedParams = abiCoder.encode(
+      ["uint8", "address", "address", "uint256", "uint128"], // Types
+      [subcode, base, quote, poolIdx, price] // Values
+    );
+
+    const createPoolTx = await dexContract.userCmd(9999, encodedParams);
+
+    const finalizePoolTx = await createPoolTx.wait();
+
+    console.log("createPoolTx", finalizePoolTx);
+  } catch (err) {
+    console.log("Caught get transaction reciept error", err);
+  }
+});
+
+task("generalTask", "taskDescription").setAction(async (taskArgs, hre) => {
+  try {
+    const fuzzTokenAddress = "0xa84E50408f9dC576309102da03Ed8D6A82b7869B";
+    const [owner] = await hre.ethers.getSigners();
+
+    const tokenArtifacts = await hre.artifacts.readArtifact("FuzzTokenV2");
+    const fuzzTokenContract = new hre.ethers.Contract(
+      fuzzTokenAddress,
+      tokenArtifacts.abi,
+      owner
+    );
+
+    const removeCubsOnlyTx =
+      await fuzzTokenContract.openTradingToNonCubsOwner();
+
+    const removeCubsOnlyTxReciept = await removeCubsOnlyTx.wait();
+
+    console.log("removeCubsOnlyTxReciept", removeCubsOnlyTxReciept);
   } catch (err) {
     console.log("Caught get transaction reciept error", err);
   }
