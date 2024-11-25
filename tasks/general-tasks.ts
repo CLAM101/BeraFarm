@@ -4,16 +4,48 @@ import { ERC20ABI } from "../test/testHelpers/ABI/ERC20-abi";
 import { impersonateAccount } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { encodeAbiParameters, parseAbiParameters } from "viem";
 import { BigNumberish } from "ethers";
+import { getCrocErc20LpAddress } from "../helpers/helpers";
 
-function toCrocPrice(price: number | BigNumberish): BigNumberish {
-  return typeof price === "number" ? toSqrtPrice(price) : price;
+// function toCrocPrice(price: number | BigNumberish): BigNumberish {
+//   return typeof price === "number" ? toSqrtPrice(price) : price;
+// }
+
+// export function toSqrtPrice(price: number) {
+//   const PRECISION = 100000000;
+//   const Q_64 = BigInt(2) ** BigInt(64);
+//   let sqrtFixed = Math.round(Math.sqrt(price) * PRECISION);
+//   return (BigInt(sqrtFixed) * Q_64) / BigInt(PRECISION);
+// }
+
+const Q64_64_PRECISION = BigInt(2 ** 64); // Define the precision constant
+
+// Function to compute the square root
+function sqrt(value: bigint): bigint {
+  if (value < 0n) {
+    throw new Error("Square root of a negative number");
+  }
+  let x = value;
+  let y = (x + 1n) / 2n; // Initial estimate
+  while (y < x) {
+    x = y;
+    y = (x + value / x) / 2n; // Newton's method
+  }
+  return x;
 }
 
-export function toSqrtPrice(price: number) {
-  const PRECISION = 100000000;
-  const Q_64 = BigInt(2) ** BigInt(64);
-  let sqrtFixed = Math.round(Math.sqrt(price) * PRECISION);
-  return (BigInt(sqrtFixed) * Q_64) / BigInt(PRECISION);
+// TypeScript equivalent of encodePriceSqrt
+function encodePriceSqrt(reserve1: bigint, reserve0: bigint): bigint {
+  // Check to avoid division by zero
+  if (reserve0 === 0n) {
+    throw new Error("Division by zero");
+  }
+
+  // Perform the calculation
+  const numerator = reserve1 * Q64_64_PRECISION * Q64_64_PRECISION;
+  const result = sqrt(numerator / reserve0);
+
+  // Return result as a bigint
+  return result;
 }
 
 task(
@@ -509,8 +541,13 @@ task(
     const base = fuzzTokenAddress; // address
     const quote = honeyAddress; // address
     const poolIdx = 36000; // uint256
-    const price = toCrocPrice(2);
+
     // uint128 (Q64.64 representation
+
+    const baseAmount = hre.ethers.parseEther("200000");
+    const quoteAmount = hre.ethers.parseEther("100000");
+
+    const price = encodePriceSqrt(baseAmount, quoteAmount);
 
     console.log("Price: ", price);
 
@@ -530,6 +567,154 @@ task(
     console.log("Caught get transaction reciept error", err);
   }
 });
+
+task("initPoolAddLiquid", "Initializes pool and adds liquidity").setAction(
+  async (taskArgs, hre) => {
+    try {
+      const honeyAddress = "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03";
+      const bexAddress = "0xAB827b1Cc3535A9e549EE387A6E9C3F02F481B49";
+      const fuzzTokenAddress = "0x43b7856f14699badaef9e484d4f911551ef9d739";
+
+      const [owner] = await hre.ethers.getSigners();
+
+      const dexContract = new hre.ethers.Contract(bexAddress, bexABI, owner);
+
+      const honeyContract = new hre.ethers.Contract(
+        honeyAddress,
+        ERC20ABI,
+        owner
+      );
+
+      const fuzzTokenContract = new hre.ethers.Contract(
+        fuzzTokenAddress,
+        ERC20ABI,
+        owner
+      );
+
+      const approvalTxHoney = await honeyContract.approve(
+        bexAddress,
+        hre.ethers.parseEther("1000002")
+      );
+      await approvalTxHoney.wait();
+
+      const honeyAllwoance = await honeyContract.allowance(
+        owner.address,
+        bexAddress
+      );
+
+      const honeyTokenBalance = await honeyContract.balanceOf(owner.address);
+
+      console.log(
+        "Honey Allow : ",
+        hre.ethers.formatEther(honeyAllwoance),
+        "Honey Balance: ",
+        hre.ethers.formatEther(honeyTokenBalance)
+      );
+
+      const approvalTxFuzz = await fuzzTokenContract.approve(
+        bexAddress,
+        hre.ethers.parseEther("3000000")
+      );
+
+      await approvalTxFuzz.wait();
+
+      const fuzzAllowance = await fuzzTokenContract.allowance(
+        owner.address,
+        bexAddress
+      );
+
+      const fuzzTokenBalance = await fuzzTokenContract.balanceOf(owner.address);
+
+      console.log(
+        "Fuzz Allow : ",
+        hre.ethers.formatEther(fuzzAllowance),
+        "Fuzz Balance: ",
+        hre.ethers.formatEther(fuzzTokenBalance)
+      );
+
+      const zeroForOne = honeyAddress.localeCompare(fuzzTokenAddress) < 0;
+
+      let baseToken;
+      let quoteToken;
+      let liqCode;
+      if (!zeroForOne) {
+        baseToken = honeyAddress;
+        quoteToken = fuzzTokenAddress;
+        liqCode = 31;
+      } else {
+        baseToken = fuzzTokenAddress;
+        quoteToken = honeyAddress;
+        liqCode = 32;
+      }
+
+      const abiCoder = new hre.ethers.AbiCoder();
+
+      const baseAmount = hre.ethers.parseEther("200000");
+      const quoteAmount = hre.ethers.parseEther("100000");
+
+      const price = encodePriceSqrt(baseAmount, quoteAmount);
+      const cmd1 = abiCoder.encode(
+        ["uint8", "address", "address", "uint256", "uint128"], // Types
+        [71, baseToken, quoteToken, 36000, price] // Values
+      );
+
+      const lpConduit = await getCrocErc20LpAddress(
+        baseToken,
+        quoteToken,
+        bexAddress,
+        hre.ethers
+      );
+
+      const burnAmount = BigInt(10000000);
+
+      const cmd2 = abiCoder.encode(
+        [
+          "uint8",
+          "address",
+          "address",
+          "uint256",
+          "int24",
+          "int24",
+          "uint128",
+          "uint128",
+          "uint128",
+          "uint8",
+          "address",
+        ],
+        [
+          liqCode,
+          baseToken,
+          quoteToken,
+          36000,
+          0,
+          0,
+          baseAmount - burnAmount,
+          price,
+          price,
+          0,
+          lpConduit,
+        ] as any[11]
+      );
+
+      const multiPathArgs = [2, 3, cmd1, 128, cmd2];
+
+      const multiCmd = abiCoder.encode(
+        ["uint8", "uint8", "bytes", "uint8", "bytes"],
+        multiPathArgs as any[5]
+      );
+
+      const createPoolAddLiquidTx = await dexContract.userCmd(6, multiCmd);
+
+      const finalizePoolTx = await createPoolAddLiquidTx.wait();
+
+      console.log("createPoolAddLiquidTx", finalizePoolTx);
+
+      console.log("Zero For One: ", zeroForOne);
+    } catch (err) {
+      console.log("Caught get transaction receipt error", err);
+    }
+  }
+);
 
 task("generalTask", "taskDescription").setAction(async (taskArgs, hre) => {
   try {
