@@ -38,7 +38,11 @@ async function main() {
       quoteAmount
     );
 
-    const price = queryPrice(ethers, fuzzToken.target as string, honeyAddress);
+    const price = await queryPrice(
+      ethers,
+      fuzzToken.target as string,
+      honeyAddress
+    );
 
     console.log("All deployed, $Fuzz Price at:", price);
   } catch (e) {

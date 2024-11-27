@@ -166,6 +166,8 @@ export async function multiCallCreatePoolAddLiquid(
   const createPoolAddLiquidTx = await dexContract.userCmd(6, multiCmd);
 
   const finalizePoolTx = await createPoolAddLiquidTx.wait();
+
+  console.log("Pool created and liquidity added");
 }
 
 export async function impersonateAndGetTokens(
@@ -196,7 +198,7 @@ export async function queryPrice(
   ethers: any,
   baseToken: string | Addressable,
   quoteToken: string | Addressable
-): Promise<number> {
+): Promise<bigint> {
   const [deployer] = await ethers.getSigners();
   const queryAddress = "0x8685CE9Db06D40CBa73e3d09e6868FE476B5dC89";
 
@@ -204,8 +206,8 @@ export async function queryPrice(
 
   const x = await queryContract.queryPrice(quoteToken, baseToken, 36000);
 
-  const sq = x / 2 ** 64;
-  const price = sq * sq;
+  const sq = BigInt(x) / BigInt(2) ** BigInt(64);
+  const price = BigInt(sq) * BigInt(sq);
 
   return price;
 }
