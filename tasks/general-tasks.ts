@@ -4,7 +4,9 @@ import { ERC20ABI } from "../test/testHelpers/ABI/ERC20-abi";
 import { impersonateAccount } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { encodeAbiParameters, parseAbiParameters } from "viem";
 import { BigNumberish } from "ethers";
-import { getCrocErc20LpAddress } from "../helpers/helpers";
+import { predictConduitAddress } from "../helpers/helpers";
+import { getEvents } from "../test/testHelpers/eventListener";
+import { queryABI } from "../test/testHelpers/ABI/query-abi";
 
 // function toCrocPrice(price: number | BigNumberish): BigNumberish {
 //   return typeof price === "number" ? toSqrtPrice(price) : price;
@@ -289,13 +291,21 @@ task(
 ).setAction(async (taskArgs, hre) => {
   try {
     const [deployer] = await hre.ethers.getSigners();
-    const bexAddress = "0x8685CE9Db06D40CBa73e3d09e6868FE476B5dC89";
+    const queryAddress = "0x8685CE9Db06D40CBa73e3d09e6868FE476B5dC89";
 
-    const bexContract = new hre.ethers.Contract(bexAddress, bexABI, deployer);
+    const queryContract = new hre.ethers.Contract(
+      queryAddress,
+      queryABI,
+      deployer
+    );
 
-    const liquidity = await bexContract.queryPrice(
+    const honeyAddress = "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03";
+
+    const fuzzTokenAddress = "0x43b7856f14699badaef9e484d4f911551ef9d739";
+
+    const liquidity = await queryContract.queryPrice(
       "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03",
-      "0x7507c1dc16935b82698e4c63f2746a2fcf994df8",
+      "0x43b7856f14699badaef9e484d4f911551ef9d739",
       36000
     );
 
@@ -472,7 +482,7 @@ task(
   try {
     const honeyAddress = "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03";
     const bexAddress = "0xAB827b1Cc3535A9e549EE387A6E9C3F02F481B49";
-    const fuzzTokenAddress = "0xa84E50408f9dC576309102da03Ed8D6A82b7869B";
+    const fuzzTokenAddress = "0x43b7856f14699badaef9e484d4f911551ef9d739";
 
     const [owner] = await hre.ethers.getSigners();
 
@@ -533,16 +543,24 @@ task(
 
     const abiCoder = new hre.ethers.AbiCoder();
 
-    let takeCmd = abiCoder.encode(["uint8", "uint8"], [114, 0]);
-
-    await dexContract.protocolCmd(0, takeCmd, false);
-
     const subcode = 71; // uint8
-    const base = fuzzTokenAddress; // address
-    const quote = honeyAddress; // address
+
     const poolIdx = 36000; // uint256
 
-    // uint128 (Q64.64 representation
+    const zeroForOne = honeyAddress.localeCompare(fuzzTokenAddress) < 0;
+
+    let baseToken;
+    let quoteToken;
+    let liqCode;
+    if (zeroForOne) {
+      baseToken = honeyAddress;
+      quoteToken = fuzzTokenAddress;
+      liqCode = 31;
+    } else {
+      baseToken = fuzzTokenAddress;
+      quoteToken = honeyAddress;
+      liqCode = 32;
+    }
 
     const baseAmount = hre.ethers.parseEther("200000");
     const quoteAmount = hre.ethers.parseEther("100000");
@@ -551,18 +569,81 @@ task(
 
     console.log("Price: ", price);
 
-    // Use ethers.utils.defaultAbiCoder to encode parameters
-
     const encodedParams = abiCoder.encode(
       ["uint8", "address", "address", "uint256", "uint128"], // Types
-      [subcode, base, quote, poolIdx, price] // Values
+      [subcode, baseToken, quoteToken, poolIdx, price] // Values
     );
 
-    const createPoolTx = await dexContract.userCmd(9999, encodedParams);
+    const decodedParams = abiCoder.decode(
+      ["uint8", "address", "address", "uint256", "uint128"],
+      encodedParams
+    );
 
-    const finalizePoolTx = await createPoolTx.wait();
+    console.log("Decoded Params: ", decodedParams);
 
-    console.log("createPoolTx", finalizePoolTx);
+    const createPoolTx = await dexContract.userCmd(3, encodedParams);
+
+    const finalizePoolTx = await createPoolTx.wait(1);
+
+    const blockNumber = finalizePoolTx?.blockNumber;
+
+    const { eventInterface, events } = await getEvents(
+      blockNumber,
+      blockNumber,
+      dexContract.address,
+      hre.ethers
+    );
+
+    let lpConduit;
+
+    for (const event of events) {
+      const parsedEvent = eventInterface.parseLog(event);
+
+      if (parsedEvent?.name === "BeraCrocLPCreated") {
+        // Access the event parameters
+
+        console.log("Final SVG", parsedEvent.args);
+
+        lpConduit = parsedEvent.args.token;
+      }
+    }
+
+    const burnAmount = BigInt(10000000);
+
+    const addLiquidArgs = abiCoder.encode(
+      [
+        "uint8",
+        "address",
+        "address",
+        "uint256",
+        "int24",
+        "int24",
+        "uint128",
+        "uint128",
+        "uint128",
+        "uint8",
+        "address",
+      ],
+      [
+        liqCode,
+        baseToken,
+        quoteToken,
+        36000,
+        0,
+        0,
+        baseAmount - burnAmount,
+        price,
+        price,
+        0,
+        lpConduit,
+      ] as any[11]
+    );
+
+    const createPoolAddLiquidTx = await dexContract.userCmd(128, addLiquidArgs);
+
+    const finalizePoolAddLiquidTx = await createPoolAddLiquidTx.wait(1);
+
+    console.log("add liquid tx", finalizePoolAddLiquidTx);
   } catch (err) {
     console.log("Caught get transaction reciept error", err);
   }
@@ -593,7 +674,7 @@ task("initPoolAddLiquid", "Initializes pool and adds liquidity").setAction(
 
       const approvalTxHoney = await honeyContract.approve(
         bexAddress,
-        hre.ethers.parseEther("1000002")
+        hre.ethers.parseEther("1000000")
       );
       await approvalTxHoney.wait();
 
@@ -637,7 +718,7 @@ task("initPoolAddLiquid", "Initializes pool and adds liquidity").setAction(
       let baseToken;
       let quoteToken;
       let liqCode;
-      if (!zeroForOne) {
+      if (zeroForOne) {
         baseToken = honeyAddress;
         quoteToken = fuzzTokenAddress;
         liqCode = 31;
@@ -649,21 +730,31 @@ task("initPoolAddLiquid", "Initializes pool and adds liquidity").setAction(
 
       const abiCoder = new hre.ethers.AbiCoder();
 
-      const baseAmount = hre.ethers.parseEther("200000");
-      const quoteAmount = hre.ethers.parseEther("100000");
+      const baseAmount = hre.ethers.parseEther("20000");
+      const quoteAmount = hre.ethers.parseEther("20000");
 
       const price = encodePriceSqrt(baseAmount, quoteAmount);
       const cmd1 = abiCoder.encode(
         ["uint8", "address", "address", "uint256", "uint128"], // Types
         [71, baseToken, quoteToken, 36000, price] // Values
       );
+      console.log("Price", price);
+      const lpConduit = await predictConduitAddress(
+        baseToken,
+        quoteToken,
+        bexAddress,
+        hre.ethers,
+        abiCoder
+      );
 
-      const lpConduit = await getCrocErc20LpAddress(
+      const altLPConduit = await getCrocErc20LpAddress(
         baseToken,
         quoteToken,
         bexAddress,
         hre.ethers
       );
+
+      console.log("lpConduit: ", lpConduit, "altLPConduit: ", altLPConduit);
 
       const burnAmount = BigInt(10000000);
 

@@ -48,47 +48,47 @@ contract FuzzTokenV2 is IFUZZTOKEN, ERC20, Ownable {
         );
     }
 
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal virtual override {
-        super._beforeTokenTransfer(from, to, amount);
+    // function _beforeTokenTransfer(
+    //     address from,
+    //     address to,
+    //     uint256 amount
+    // ) internal virtual override {
+    //     super._beforeTokenTransfer(from, to, amount);
 
-        if (!tradingEnabled) {
-            require(
-                from == owner() || to == owner(),
-                "Patience - Trading Not Started Yet!"
-            );
-            return;
-        }
-        if (
-            (cubsOnly &&
-                to != address(0) &&
-                to != beraFarmAddress &&
-                from != owner())
-        ) {
-            uint256 traderCubbalance = beraCubNftContract.balanceOf(to);
+    //     if (!tradingEnabled) {
+    //         require(
+    //             from == owner() || to == owner(),
+    //             "Patience - Trading Not Started Yet!"
+    //         );
+    //         return;
+    //     }
+    //     if (
+    //         (cubsOnly &&
+    //             to != address(0) &&
+    //             to != beraFarmAddress &&
+    //             from != owner())
+    //     ) {
+    //         uint256 traderCubbalance = beraCubNftContract.balanceOf(to);
 
-            require(
-                traderCubbalance > 0,
-                "Cubs Only Is active - You need to have a Bera Cub to trade FUZZ!"
-            );
-        }
+    //         require(
+    //             traderCubbalance > 0,
+    //             "Cubs Only Is active - You need to have a Bera Cub to trade FUZZ!"
+    //         );
+    //     }
 
-        // Allow deployer (owner) to send/receive any amount and the liquidityPool to receive any amount.
-        // This allows for loading of the LP, and for people to sell tokens into the LP whilst hibernation in progress.
-        if (hibernating && from != owner() && to != liquidityPool) {
-            // Require that a receiving wallet will not hold more than 1% of supply after a transfer whilst hibernation is in effect
+    //     // Allow deployer (owner) to send/receive any amount and the liquidityPool to receive any amount.
+    //     // This allows for loading of the LP, and for people to sell tokens into the LP whilst hibernation in progress.
+    //     if (hibernating && from != owner() && to != liquidityPool) {
+    //         // Require that a receiving wallet will not hold more than 1% of supply after a transfer whilst hibernation is in effect
 
-            uint256 newBalance = balanceOf(to).add(amount);
+    //         uint256 newBalance = balanceOf(to).add(amount);
 
-            require(
-                newBalance <= totalSupply() / 100,
-                "Just getting warmed up, limit of 1% of $FUZZ can be Traded until Bera Hibernation is complete!"
-            );
-        }
-    }
+    //         require(
+    //             newBalance <= totalSupply() / 100,
+    //             "Just getting warmed up, limit of 1% of $FUZZ can be Traded until Bera Hibernation is complete!"
+    //         );
+    //     }
+    // }
 
     function mint(
         address to_,
