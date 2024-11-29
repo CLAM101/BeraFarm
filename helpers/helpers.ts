@@ -44,6 +44,14 @@ function sqrt(value: bigint): bigint {
   return x;
 }
 
+function calculatePriceFromSqrt(x: bigint): bigint {
+  const sq = BigInt(x) / BigInt(2) ** BigInt(64);
+  const price = BigInt(sq) * BigInt(sq);
+
+  // Return result as a bigint
+  return price;
+}
+
 function encodePriceSqrt(reserve1: bigint, reserve0: bigint): bigint {
   const Q64_64_PRECISION = BigInt(2 ** 64); // Define the precision constant
   // Check to avoid division by zero
@@ -62,8 +70,8 @@ function encodePriceSqrt(reserve1: bigint, reserve0: bigint): bigint {
 export async function multiCallCreatePoolAddLiquid(
   ethers: any,
   fuzzTokenAddress: string | Addressable,
-  baseAmount: bigint,
-  quoteAmount: bigint
+  fuzzAmount: bigint,
+  honeyAmount: bigint
 ) {
   const honeyAddress = "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03";
   const bexAddress = "0xAB827b1Cc3535A9e549EE387A6E9C3F02F481B49";
@@ -80,14 +88,16 @@ export async function multiCallCreatePoolAddLiquid(
     owner
   );
 
-  const approvalTxHoney = await honeyContract.approve(bexAddress, baseAmount);
+  const approvalTxHoney = await honeyContract.approve(bexAddress, fuzzAmount);
   await approvalTxHoney.wait();
 
   const approvalTxFuzz = await fuzzTokenContract.approve(
     bexAddress,
-    quoteAmount
+    honeyAmount
   );
 
+  let baseAmount;
+  let quoteAmount;
   await approvalTxFuzz.wait();
 
   const zeroForOne = honeyAddress.localeCompare(fuzzTokenAddress as string) < 0;
@@ -97,11 +107,15 @@ export async function multiCallCreatePoolAddLiquid(
   let liqCode;
   if (zeroForOne) {
     baseToken = honeyAddress;
+    baseAmount = honeyAmount;
+    quoteAmount = fuzzAmount;
     quoteToken = fuzzTokenAddress;
     liqCode = 31;
   } else {
     baseToken = fuzzTokenAddress;
     quoteToken = honeyAddress;
+    baseAmount = fuzzAmount;
+    quoteAmount = honeyAmount;
     liqCode = 32;
   }
 
@@ -109,6 +123,8 @@ export async function multiCallCreatePoolAddLiquid(
 
   //Note just check this token order works
   const price = encodePriceSqrt(quoteAmount, baseAmount);
+
+  console.log("Price", calculatePriceFromSqrt(price));
 
   //Init pool args
   const cmd1 = abiCoder.encode(
@@ -206,8 +222,5 @@ export async function queryPrice(
 
   const x = await queryContract.queryPrice(quoteToken, baseToken, 36000);
 
-  const sq = BigInt(x) / BigInt(2) ** BigInt(64);
-  const price = BigInt(sq) * BigInt(sq);
-
-  return price;
+  return calculatePriceFromSqrt(x);
 }

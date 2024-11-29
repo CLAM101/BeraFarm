@@ -28,14 +28,14 @@ async function main() {
 
     await impersonateAndGetTokens(honeyAddress, addressToImpersonate, ethers);
 
-    const baseAmount = ethers.parseEther("100000");
-    const quoteAmount = ethers.parseEther("200000");
+    const fuzzAmount = ethers.parseEther("200000");
+    const honeyAmount = ethers.parseEther("100000");
 
     await multiCallCreatePoolAddLiquid(
       ethers,
       fuzzToken.target,
-      baseAmount,
-      quoteAmount
+      fuzzAmount,
+      honeyAmount
     );
 
     const price = await queryPrice(
