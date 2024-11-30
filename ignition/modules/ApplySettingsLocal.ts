@@ -1,11 +1,11 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 import BeraCub from "./BeraCub";
-import FuzzToken from "./FuzzTokenV2";
+import FuzzTokenV2 from "./FuzzTokenV2";
 import BeraFarmLocal from "./BeraFarmLocal";
 
 export default buildModule("ApplySettingsLocal", (m): any => {
   const { beraCub } = m.useModule(BeraCub);
-  const { fuzzToken } = m.useModule(FuzzToken);
+  const { fuzzToken } = m.useModule(FuzzTokenV2);
   const { beraFarm } = m.useModule(BeraFarmLocal);
 
   const owner = m.getAccount(0);

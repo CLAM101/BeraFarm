@@ -30,6 +30,27 @@ export async function predictConduitAddress(
   return lpConduitAddress;
 }
 
+export function determineBaseQuoteOrder(
+  token1: string,
+  token2: string
+): { baseToken: string; quoteToken: string } {
+  const zeroForOne = token1.localeCompare(token2 as string) < 0;
+
+  let baseToken;
+  let quoteToken;
+
+  if (zeroForOne) {
+    baseToken = token1;
+
+    quoteToken = token2;
+  } else {
+    baseToken = token2;
+    quoteToken = token1;
+  }
+
+  return { baseToken, quoteToken };
+}
+
 // Function to compute the square root
 function sqrt(value: bigint): bigint {
   if (value < 0n) {
@@ -44,11 +65,16 @@ function sqrt(value: bigint): bigint {
   return x;
 }
 
-function calculatePriceFromSqrt(x: bigint): bigint {
-  const sq = BigInt(x) / BigInt(2) ** BigInt(64);
-  const price = BigInt(sq) * BigInt(sq);
+export function calculatePriceFromSqrt(x: bigint): number {
+  // Q64.64 scaling factor
+  const Q64_64 = BigInt(2) ** BigInt(64);
 
-  // Return result as a bigint
+  // Convert sqrtPrice from Q64.64 to a floating-point number
+  const sqrtPrice = Number(x) / Number(Q64_64);
+
+  // Calculate price as the square of sqrtPrice
+  const price = sqrtPrice * sqrtPrice;
+
   return price;
 }
 
@@ -124,7 +150,7 @@ export async function multiCallCreatePoolAddLiquid(
   //Note just check this token order works
   const price = encodePriceSqrt(quoteAmount, baseAmount);
 
-  console.log("Price", calculatePriceFromSqrt(price));
+  console.log("Price Calculation", calculatePriceFromSqrt(price));
 
   //Init pool args
   const cmd1 = abiCoder.encode(
@@ -220,7 +246,7 @@ export async function queryPrice(
 
   const queryContract = new ethers.Contract(queryAddress, queryABI, deployer);
 
-  const x = await queryContract.queryPrice(quoteToken, baseToken, 36000);
+  const x = await queryContract.queryPrice(baseToken, quoteToken, 36000);
 
   return calculatePriceFromSqrt(x);
 }

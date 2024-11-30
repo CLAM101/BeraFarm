@@ -10,13 +10,12 @@ export default buildModule("DeployLocal", (m: any): any => {
   const { fuzzToken } = m.useModule(FuzzTokenV2);
   const { beraFarm } = m.useModule(BeraFarm);
   const { nftMarketplace } = m.useModule(MarketPlace);
-  // const { applySettingsLocal } = m.useModule(ApplySettingsLocal);
+  m.useModule(ApplySettingsLocal);
 
   return {
     beraCub,
     beraFarm,
     fuzzToken,
     nftMarketplace,
-    // applySettingsLocal,
   };
 });

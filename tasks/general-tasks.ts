@@ -7,6 +7,7 @@ import { BigNumberish } from "ethers";
 import { predictConduitAddress } from "../helpers/helpers";
 import { getEvents } from "../test/testHelpers/eventListener";
 import { queryABI } from "../test/testHelpers/ABI/query-abi";
+import { calculatePriceFromSqrt } from "../helpers/helpers";
 
 // function toCrocPrice(price: number | BigNumberish): BigNumberish {
 //   return typeof price === "number" ? toSqrtPrice(price) : price;
@@ -304,12 +305,12 @@ task(
     const fuzzTokenAddress = "0x43b7856f14699badaef9e484d4f911551ef9d739";
 
     const liquidity = await queryContract.queryPrice(
+      "0x8dA4973175c2c700Cd91e9ac9A29b5431926D592",
       "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03",
-      "0x43b7856f14699badaef9e484d4f911551ef9d739",
       36000
     );
 
-    console.log("Liquidity: ", liquidity);
+    console.log("Liquidity: ", calculatePriceFromSqrt(liquidity));
   } catch (e) {
     console.log(e);
   }
@@ -381,7 +382,7 @@ task(
   "Approves spend with the Honey contract on testnet"
 ).setAction(async (taskArgs, hre) => {
   try {
-    const farmAddress = "0x3b63985303d5636f6b60315b45531d176af2c399";
+    const farmAddress = "0xd8A9d057795fe2ef6171FCB05d2c96001555ff6d";
 
     const [owner] = await hre.ethers.getSigners();
 
@@ -394,7 +395,7 @@ task(
       signer
     );
 
-    const tokenAddress = "0xa84E50408f9dC576309102da03Ed8D6A82b7869B";
+    const tokenAddress = "0x8dA4973175c2c700Cd91e9ac9A29b5431926D592";
 
     const tokenArtifacts = await hre.artifacts.readArtifact("FuzzTokenV2");
 
