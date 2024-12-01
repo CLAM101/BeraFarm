@@ -4,10 +4,10 @@ import { ERC20ABI } from "../test/testHelpers/ABI/ERC20-abi";
 import { impersonateAccount } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { encodeAbiParameters, parseAbiParameters } from "viem";
 import { BigNumberish } from "ethers";
-import { predictConduitAddress } from "../helpers/helpers";
+import { predictConduitAddress } from "../helpers/HelpersOld";
 import { getEvents } from "../test/testHelpers/eventListener";
 import { queryABI } from "../test/testHelpers/ABI/query-abi";
-import { calculatePriceFromSqrt } from "../helpers/helpers";
+import { calculatePriceFromSqrt } from "../helpers/HelpersOld";
 
 // function toCrocPrice(price: number | BigNumberish): BigNumberish {
 //   return typeof price === "number" ? toSqrtPrice(price) : price;
@@ -378,7 +378,7 @@ task("createPool", "Creates a pool on Bex").setAction(async (taskArgs, hre) => {
 });
 
 task(
-  "setPlatfromState",
+  "setPlatformState",
   "Approves spend with the Honey contract on testnet"
 ).setAction(async (taskArgs, hre) => {
   try {

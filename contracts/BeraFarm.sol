@@ -521,11 +521,11 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         // We need to square it and scale it down by the fixed-point scale factor (2^64)
 
         // Convert sqrtPriceX64 to a uint256 so we can perform 128-bit multiplication safely
-        uint256 sqrtPriceX64_256 = uint256(sqrtPriceX64);
+        uint256 sqrtPriceX64_256 = uint256(sqrtPriceX64).div(2 ** 64);
 
         // Square the value to get the base-to-quote price (but still in Q128.128 format)
         uint256 priceX128 = sqrtPriceX64_256 * sqrtPriceX64_256;
-
+        console.log("PriceX128: ", priceX128);
         // Convert from Q128.128 to a normal integer by shifting right 64 bits (2^64)
         uint256 price = priceX128 >> 64;
 

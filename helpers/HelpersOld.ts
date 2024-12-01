@@ -240,7 +240,7 @@ export async function queryPrice(
   ethers: any,
   baseToken: string | Addressable,
   quoteToken: string | Addressable
-): Promise<bigint> {
+): Promise<number> {
   const [deployer] = await ethers.getSigners();
   const queryAddress = "0x8685CE9Db06D40CBa73e3d09e6868FE476B5dC89";
 

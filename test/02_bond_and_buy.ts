@@ -5,8 +5,6 @@ import { ethers } from "hardhat";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { BlockTag, Log } from "@ethersproject/abstract-provider";
 
-import { BeraCub, BeraFarm, FuzzToken, MockHoney } from "../typechain-types";
-
 const helpers = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 import { deployBondAndBuy } from "./testHelpers/deployContractsIgnition";
 
@@ -44,7 +42,9 @@ describe("Bond and Buy", async function () {
       eighthAccount,
     ] = await ethers.getSigners();
 
-    await beraFarm.connect(owner).setPlatformState(true);
+    const impersonatedSigner = await beraFarm
+      .connect(owner)
+      .setPlatformState(true);
     await beraFarm.connect(owner).openBuyBeraCubsHoney();
     await fuzzToken.connect(owner).enableTrading();
   });
