@@ -517,18 +517,15 @@ contract BeraFarm is Ownable, ReentrancyGuard {
     function calculatePrice(
         uint128 sqrtPriceX64
     ) internal pure returns (uint256) {
-        // In Q64.64 format, the number is already a square root of the price
-        // We need to square it and scale it down by the fixed-point scale factor (2^64)
         uint256 priceConvertedForDecimals = uint256(sqrtPriceX64).mul(1e18).div(
             2 ** 64
         );
 
-        // Square the value to get the base-to-quote price (but still in Q128.128 format)
         uint256 price = priceConvertedForDecimals
             .mul(priceConvertedForDecimals)
             .div(1e18);
 
-        return price; // This is the final base-to-quote price
+        return price;
     }
 
     function getFuzzPrice() public view returns (uint256) {
@@ -537,8 +534,6 @@ contract BeraFarm is Ownable, ReentrancyGuard {
             fuzzAddress,
             36000
         );
-
-        console.log("Fetched Price: ", fetchedPrice);
 
         uint256 price = calculatePrice(fetchedPrice);
 
