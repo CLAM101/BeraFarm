@@ -4,10 +4,9 @@ import { ERC20ABI } from "../test/testHelpers/ABI/ERC20-abi";
 import { impersonateAccount } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { encodeAbiParameters, parseAbiParameters } from "viem";
 import { BigNumberish } from "ethers";
-import { predictConduitAddress } from "../helpers/HelpersOld";
+
 import { getEvents } from "../test/testHelpers/eventListener";
 import { queryABI } from "../test/testHelpers/ABI/query-abi";
-import { calculatePriceFromSqrt } from "../helpers/HelpersOld";
 
 // function toCrocPrice(price: number | BigNumberish): BigNumberish {
 //   return typeof price === "number" ? toSqrtPrice(price) : price;
@@ -286,35 +285,35 @@ task("generalViewCall", "get options of a pool from bex contract").setAction(
   }
 );
 
-task(
-  "getPrice",
-  "Will fetch the current price of a token on the Bex contract"
-).setAction(async (taskArgs, hre) => {
-  try {
-    const [deployer] = await hre.ethers.getSigners();
-    const queryAddress = "0x8685CE9Db06D40CBa73e3d09e6868FE476B5dC89";
+// task(
+//   "getPrice",
+//   "Will fetch the current price of a token on the Bex contract"
+// ).setAction(async (taskArgs, hre) => {
+//   try {
+//     const [deployer] = await hre.ethers.getSigners();
+//     const queryAddress = "0x8685CE9Db06D40CBa73e3d09e6868FE476B5dC89";
 
-    const queryContract = new hre.ethers.Contract(
-      queryAddress,
-      queryABI,
-      deployer
-    );
+//     const queryContract = new hre.ethers.Contract(
+//       queryAddress,
+//       queryABI,
+//       deployer
+//     );
 
-    const honeyAddress = "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03";
+//     const honeyAddress = "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03";
 
-    const fuzzTokenAddress = "0x43b7856f14699badaef9e484d4f911551ef9d739";
+//     const fuzzTokenAddress = "0x43b7856f14699badaef9e484d4f911551ef9d739";
 
-    const liquidity = await queryContract.queryPrice(
-      "0x8dA4973175c2c700Cd91e9ac9A29b5431926D592",
-      "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03",
-      36000
-    );
+//     const liquidity = await queryContract.queryPrice(
+//       "0x8dA4973175c2c700Cd91e9ac9A29b5431926D592",
+//       "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03",
+//       36000
+//     );
 
-    console.log("Liquidity: ", calculatePriceFromSqrt(liquidity));
-  } catch (e) {
-    console.log(e);
-  }
-});
+//     console.log("Liquidity: ", calculatePriceFromSqrt(liquidity));
+//   } catch (e) {
+//     console.log(e);
+//   }
+// });
 
 task("createPool", "Creates a pool on Bex").setAction(async (taskArgs, hre) => {
   try {
@@ -650,163 +649,163 @@ task(
   }
 });
 
-task("initPoolAddLiquid", "Initializes pool and adds liquidity").setAction(
-  async (taskArgs, hre) => {
-    try {
-      const honeyAddress = "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03";
-      const bexAddress = "0xAB827b1Cc3535A9e549EE387A6E9C3F02F481B49";
-      const fuzzTokenAddress = "0x43b7856f14699badaef9e484d4f911551ef9d739";
+// task("initPoolAddLiquid", "Initializes pool and adds liquidity").setAction(
+//   async (taskArgs, hre) => {
+//     try {
+//       const honeyAddress = "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03";
+//       const bexAddress = "0xAB827b1Cc3535A9e549EE387A6E9C3F02F481B49";
+//       const fuzzTokenAddress = "0x43b7856f14699badaef9e484d4f911551ef9d739";
 
-      const [owner] = await hre.ethers.getSigners();
+//       const [owner] = await hre.ethers.getSigners();
 
-      const dexContract = new hre.ethers.Contract(bexAddress, bexABI, owner);
+//       const dexContract = new hre.ethers.Contract(bexAddress, bexABI, owner);
 
-      const honeyContract = new hre.ethers.Contract(
-        honeyAddress,
-        ERC20ABI,
-        owner
-      );
+//       const honeyContract = new hre.ethers.Contract(
+//         honeyAddress,
+//         ERC20ABI,
+//         owner
+//       );
 
-      const fuzzTokenContract = new hre.ethers.Contract(
-        fuzzTokenAddress,
-        ERC20ABI,
-        owner
-      );
+//       const fuzzTokenContract = new hre.ethers.Contract(
+//         fuzzTokenAddress,
+//         ERC20ABI,
+//         owner
+//       );
 
-      const approvalTxHoney = await honeyContract.approve(
-        bexAddress,
-        hre.ethers.parseEther("1000000")
-      );
-      await approvalTxHoney.wait();
+//       const approvalTxHoney = await honeyContract.approve(
+//         bexAddress,
+//         hre.ethers.parseEther("1000000")
+//       );
+//       await approvalTxHoney.wait();
 
-      const honeyAllwoance = await honeyContract.allowance(
-        owner.address,
-        bexAddress
-      );
+//       const honeyAllwoance = await honeyContract.allowance(
+//         owner.address,
+//         bexAddress
+//       );
 
-      const honeyTokenBalance = await honeyContract.balanceOf(owner.address);
+//       const honeyTokenBalance = await honeyContract.balanceOf(owner.address);
 
-      console.log(
-        "Honey Allow : ",
-        hre.ethers.formatEther(honeyAllwoance),
-        "Honey Balance: ",
-        hre.ethers.formatEther(honeyTokenBalance)
-      );
+//       console.log(
+//         "Honey Allow : ",
+//         hre.ethers.formatEther(honeyAllwoance),
+//         "Honey Balance: ",
+//         hre.ethers.formatEther(honeyTokenBalance)
+//       );
 
-      const approvalTxFuzz = await fuzzTokenContract.approve(
-        bexAddress,
-        hre.ethers.parseEther("3000000")
-      );
+//       const approvalTxFuzz = await fuzzTokenContract.approve(
+//         bexAddress,
+//         hre.ethers.parseEther("3000000")
+//       );
 
-      await approvalTxFuzz.wait();
+//       await approvalTxFuzz.wait();
 
-      const fuzzAllowance = await fuzzTokenContract.allowance(
-        owner.address,
-        bexAddress
-      );
+//       const fuzzAllowance = await fuzzTokenContract.allowance(
+//         owner.address,
+//         bexAddress
+//       );
 
-      const fuzzTokenBalance = await fuzzTokenContract.balanceOf(owner.address);
+//       const fuzzTokenBalance = await fuzzTokenContract.balanceOf(owner.address);
 
-      console.log(
-        "Fuzz Allow : ",
-        hre.ethers.formatEther(fuzzAllowance),
-        "Fuzz Balance: ",
-        hre.ethers.formatEther(fuzzTokenBalance)
-      );
+//       console.log(
+//         "Fuzz Allow : ",
+//         hre.ethers.formatEther(fuzzAllowance),
+//         "Fuzz Balance: ",
+//         hre.ethers.formatEther(fuzzTokenBalance)
+//       );
 
-      const zeroForOne = honeyAddress.localeCompare(fuzzTokenAddress) < 0;
+//       const zeroForOne = honeyAddress.localeCompare(fuzzTokenAddress) < 0;
 
-      let baseToken;
-      let quoteToken;
-      let liqCode;
-      if (zeroForOne) {
-        baseToken = honeyAddress;
-        quoteToken = fuzzTokenAddress;
-        liqCode = 31;
-      } else {
-        baseToken = fuzzTokenAddress;
-        quoteToken = honeyAddress;
-        liqCode = 32;
-      }
+//       let baseToken;
+//       let quoteToken;
+//       let liqCode;
+//       if (zeroForOne) {
+//         baseToken = honeyAddress;
+//         quoteToken = fuzzTokenAddress;
+//         liqCode = 31;
+//       } else {
+//         baseToken = fuzzTokenAddress;
+//         quoteToken = honeyAddress;
+//         liqCode = 32;
+//       }
 
-      const abiCoder = new hre.ethers.AbiCoder();
+//       const abiCoder = new hre.ethers.AbiCoder();
 
-      const baseAmount = hre.ethers.parseEther("20000");
-      const quoteAmount = hre.ethers.parseEther("20000");
+//       const baseAmount = hre.ethers.parseEther("20000");
+//       const quoteAmount = hre.ethers.parseEther("20000");
 
-      const price = encodePriceSqrt(baseAmount, quoteAmount);
-      const cmd1 = abiCoder.encode(
-        ["uint8", "address", "address", "uint256", "uint128"], // Types
-        [71, baseToken, quoteToken, 36000, price] // Values
-      );
-      console.log("Price", price);
-      const lpConduit = await predictConduitAddress(
-        baseToken,
-        quoteToken,
-        bexAddress,
-        hre.ethers,
-        abiCoder
-      );
+//       const price = encodePriceSqrt(baseAmount, quoteAmount);
+//       const cmd1 = abiCoder.encode(
+//         ["uint8", "address", "address", "uint256", "uint128"], // Types
+//         [71, baseToken, quoteToken, 36000, price] // Values
+//       );
+//       console.log("Price", price);
+//       const lpConduit = await predictConduitAddress(
+//         baseToken,
+//         quoteToken,
+//         bexAddress,
+//         hre.ethers,
+//         abiCoder
+//       );
 
-      const altLPConduit = await getCrocErc20LpAddress(
-        baseToken,
-        quoteToken,
-        bexAddress,
-        hre.ethers
-      );
+//       const altLPConduit = await getCrocErc20LpAddress(
+//         baseToken,
+//         quoteToken,
+//         bexAddress,
+//         hre.ethers
+//       );
 
-      console.log("lpConduit: ", lpConduit, "altLPConduit: ", altLPConduit);
+//       console.log("lpConduit: ", lpConduit, "altLPConduit: ", altLPConduit);
 
-      const burnAmount = BigInt(10000000);
+//       const burnAmount = BigInt(10000000);
 
-      const cmd2 = abiCoder.encode(
-        [
-          "uint8",
-          "address",
-          "address",
-          "uint256",
-          "int24",
-          "int24",
-          "uint128",
-          "uint128",
-          "uint128",
-          "uint8",
-          "address",
-        ],
-        [
-          liqCode,
-          baseToken,
-          quoteToken,
-          36000,
-          0,
-          0,
-          baseAmount - burnAmount,
-          price,
-          price,
-          0,
-          lpConduit,
-        ] as any[11]
-      );
+//       const cmd2 = abiCoder.encode(
+//         [
+//           "uint8",
+//           "address",
+//           "address",
+//           "uint256",
+//           "int24",
+//           "int24",
+//           "uint128",
+//           "uint128",
+//           "uint128",
+//           "uint8",
+//           "address",
+//         ],
+//         [
+//           liqCode,
+//           baseToken,
+//           quoteToken,
+//           36000,
+//           0,
+//           0,
+//           baseAmount - burnAmount,
+//           price,
+//           price,
+//           0,
+//           lpConduit,
+//         ] as any[11]
+//       );
 
-      const multiPathArgs = [2, 3, cmd1, 128, cmd2];
+//       const multiPathArgs = [2, 3, cmd1, 128, cmd2];
 
-      const multiCmd = abiCoder.encode(
-        ["uint8", "uint8", "bytes", "uint8", "bytes"],
-        multiPathArgs as any[5]
-      );
+//       const multiCmd = abiCoder.encode(
+//         ["uint8", "uint8", "bytes", "uint8", "bytes"],
+//         multiPathArgs as any[5]
+//       );
 
-      const createPoolAddLiquidTx = await dexContract.userCmd(6, multiCmd);
+//       const createPoolAddLiquidTx = await dexContract.userCmd(6, multiCmd);
 
-      const finalizePoolTx = await createPoolAddLiquidTx.wait();
+//       const finalizePoolTx = await createPoolAddLiquidTx.wait();
 
-      console.log("createPoolAddLiquidTx", finalizePoolTx);
+//       console.log("createPoolAddLiquidTx", finalizePoolTx);
 
-      console.log("Zero For One: ", zeroForOne);
-    } catch (err) {
-      console.log("Caught get transaction receipt error", err);
-    }
-  }
-);
+//       console.log("Zero For One: ", zeroForOne);
+//     } catch (err) {
+//       console.log("Caught get transaction receipt error", err);
+//     }
+//   }
+// );
 
 task("generalTask", "taskDescription").setAction(async (taskArgs, hre) => {
   try {

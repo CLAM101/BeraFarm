@@ -4,15 +4,16 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { BlockTag, Log } from "@ethersproject/abstract-provider";
-
-const helpers = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 import { deployBondAndBuy } from "./testHelpers/deployContractsIgnition";
+const networkHelpers = require("@nomicfoundation/hardhat-toolbox/network-helpers");
+import { Helpers } from "../helpers/Helpers";
 
 describe("Bond and Buy", async function () {
   let beraCub: any,
     beraFarm: any,
     fuzzToken: any,
-    mockHoney: any,
+    honeyContract: any,
+    helpers: Helpers,
     owner: HardhatEthersSigner,
     otherAccount: HardhatEthersSigner,
     thirdAccount: HardhatEthersSigner,
@@ -23,14 +24,6 @@ describe("Bond and Buy", async function () {
     eighthAccount: HardhatEthersSigner;
 
   before(async function () {
-    await helpers.reset("https://rpc.ankr.com/berachain_testnet", 1886012);
-    const loadedFixture = await loadFixture(deployBondAndBuy);
-
-    beraCub = loadedFixture.beraCub;
-    fuzzToken = loadedFixture.fuzzToken;
-    beraFarm = loadedFixture.beraFarm;
-    mockHoney = loadedFixture.mockHoney;
-
     [
       owner,
       otherAccount,
@@ -41,10 +34,27 @@ describe("Bond and Buy", async function () {
       seventhAccount,
       eighthAccount,
     ] = await ethers.getSigners();
+    await networkHelpers.reset("https://bartio.rpc.berachain.com/", 1886012);
+    const loadedFixture = await loadFixture(deployBondAndBuy);
 
-    const impersonatedSigner = await beraFarm
-      .connect(owner)
-      .setPlatformState(true);
+    beraCub = loadedFixture.beraCub;
+    fuzzToken = loadedFixture.fuzzToken;
+    beraFarm = loadedFixture.beraFarm;
+
+    helpers = await Helpers.createAsync(ethers);
+
+    honeyContract = await helpers.contracts.getHoneyContract();
+
+    await honeyContract.transfer(
+      otherAccount.address,
+      ethers.parseEther("2000")
+    );
+    await honeyContract.transfer(
+      thirdAccount.address,
+      ethers.parseEther("2000")
+    );
+
+    await beraFarm.connect(owner).setPlatformState(true);
     await beraFarm.connect(owner).openBuyBeraCubsHoney();
     await fuzzToken.connect(owner).enableTrading();
   });
@@ -53,9 +63,7 @@ describe("Bond and Buy", async function () {
     it("Allows Purchase of Bera Cubs with Honey at 5 $Honey per Cub", async function () {
       const expectedTransactionTotal = ethers.parseEther("10");
       await expect(
-        mockHoney
-          .connect(owner)
-          .approve(beraFarm.target, expectedTransactionTotal)
+        honeyContract.approve(beraFarm.target, expectedTransactionTotal)
       ).to.not.be.reverted;
 
       const amountOfBeraCubs = "2";
@@ -75,7 +83,6 @@ describe("Bond and Buy", async function () {
         const event = beraFarm.interface.parseLog(log);
 
         if (event && event.name === "BoughtBeraCubsHoney") {
-          console.log("Bought Bera Cub 5 $Honey", event.args);
           expect(event.args.sender).to.equal(owner.address);
           expect(event.args.amountOfCubs).to.equal(amountOfBeraCubs);
           expect(event.args.transactionTotal).to.equal(
@@ -86,17 +93,12 @@ describe("Bond and Buy", async function () {
 
       const beraCubBalance = await beraCub.balanceOf(owner.address);
 
-      console.log(
-        "Bera Cub Balance at 5 $Honey per cub",
-        ethers.formatUnits(beraCubBalance, 0)
-      );
-
       expect(beraCubBalance).to.equal(amountOfBeraCubs);
     });
     it("In the event of the minted amount falling within both price brackets the buy function applies the correct total cost to the transaction", async function () {
       const expectedTransactionTotal = ethers.parseEther("35");
       await expect(
-        mockHoney
+        honeyContract
           .connect(otherAccount)
           .approve(beraFarm.target, expectedTransactionTotal)
       ).to.not.be.reverted;
@@ -118,7 +120,6 @@ describe("Bond and Buy", async function () {
         const event = beraFarm.interface.parseLog(log);
 
         if (event && event.name === "BoughtBeraCubsHoney") {
-          console.log("Bought Bera Cub 10 $Honey", event.args);
           expect(event.args.sender).to.equal(otherAccount.address);
           expect(event.args.amountOfCubs).to.equal(amountOfBeraCubs);
           expect(event.args.transactionTotal).to.equal(
@@ -129,11 +130,6 @@ describe("Bond and Buy", async function () {
 
       const beraCubBalance = await beraCub.balanceOf(otherAccount.address);
 
-      console.log(
-        "Bera Cub Balance at 10 $Honey pre cub",
-        ethers.formatUnits(beraCubBalance, 0)
-      );
-
       expect(beraCubBalance).to.equal(amountOfBeraCubs);
     });
 
@@ -141,19 +137,22 @@ describe("Bond and Buy", async function () {
       const bondCost = await beraFarm.getBondCost();
 
       //based on Bera Price of 1000 and liquidity of 1 000 000 Fuzz and 200 Bera added to pool
-      const expectedBondCost = ethers.parseEther("0.18");
+      const expectedBondCost = ethers.parseEther("8.999999");
 
-      console.log("Bond Cost In Test", ethers.formatEther(bondCost) + "$HONEY");
-
-      expect(bondCost).to.equal(expectedBondCost);
+      expect(bondCost).to.be.closeTo(
+        expectedBondCost,
+        ethers.parseEther("0.01")
+      );
 
       // expected cost of bonding two BeraCubs with Honey
-      const expectedTotalCost = ethers.parseEther("0.36");
+      const expectedTotalCost = ethers.parseEther("17.99998");
+
+      const approveAmount = ethers.parseEther("20");
 
       await expect(
-        mockHoney
+        honeyContract
           .connect(thirdAccount)
-          .approve(beraFarm.target, expectedTotalCost)
+          .approve(beraFarm.target, approveAmount)
       ).to.not.be.reverted;
 
       const amountOfBeraCubsToBond = "2";
@@ -175,22 +174,26 @@ describe("Bond and Buy", async function () {
         const event = beraFarm.interface.parseLog(log);
 
         if (event && event.name === "BeraCubsBonded") {
-          console.log("BeraCubsBonded args", event.args);
           expect(event.args.sender).to.equal(thirdAccount.address);
           expect(event.args.amountOfCubs).to.equal(amountOfBeraCubsToBond);
-          expect(event.args.transactionTotal).to.equal(expectedTotalCost);
+
+          expect(event.args.transactionTotal).to.be.closeTo(
+            expectedTotalCost,
+            ethers.parseEther("0.01")
+          );
         }
       });
 
       const beraCubBalance = await beraCub.balanceOf(thirdAccount.address);
 
-      const treasuryBalance = await mockHoney.balanceOf(sixthAccount.address);
+      const treasuryBalance = await honeyContract.balanceOf(
+        sixthAccount.address
+      );
 
-      console.log("Treasury Balance", ethers.formatUnits(treasuryBalance, 0));
-
-      expect(treasuryBalance).to.equal(ethers.parseEther("45.36"));
-
-      console.log("Bera Cub Balance", ethers.formatUnits(beraCubBalance, 0));
+      expect(treasuryBalance).to.be.closeTo(
+        ethers.parseEther("63"),
+        ethers.parseEther("0.01")
+      );
 
       expect(beraCubBalance).to.equal(expectedTotalBeraCubBalance);
 
@@ -200,8 +203,6 @@ describe("Bond and Buy", async function () {
 
       expect(farmerState.beraCubsBonded).to.equal(expectedTotalBeraCubBalance);
       expect(farmerState.lastUpdate).to.be.greaterThan(0);
-
-      console.log("Farmer State After Bond", farmerState);
     });
 
     it("Allows purchase of Cubs for Fuzz at the latest compound price and after all Honey cubs minted", async function () {
@@ -209,11 +210,6 @@ describe("Bond and Buy", async function () {
         (await beraFarm.maxCompoundCostSoFar()) as unknown as number;
 
       const amountOfBeraCubs = "1";
-
-      console.log(
-        "Expected Transaction Total in fuzz buy test",
-        currentPricePerCub
-      );
 
       await expect(
         fuzzToken
@@ -243,7 +239,6 @@ describe("Bond and Buy", async function () {
         const event = beraFarm.interface.parseLog(log);
 
         if (event && event.name === "BoughtBeraCubsFuzz") {
-          console.log("Bought Bera Cub for $Fuzz", event.args);
           expect(event.args.sender).to.equal(fourthAccount.address);
           expect(event.args.amountOfCubs).to.equal(amountOfBeraCubs);
           expect(event.args.transactionTotal).to.equal(currentPricePerCub);
@@ -251,13 +246,6 @@ describe("Bond and Buy", async function () {
       });
 
       const beraCubBalance = await beraCub.balanceOf(fourthAccount.address);
-
-      console.log(
-        `Bera Cub Balance at ${ethers.formatEther(
-          currentPricePerCub
-        )} $Fuzz pre cub`,
-        ethers.formatUnits(beraCubBalance, 0)
-      );
 
       expect(beraCubBalance).to.equal(amountOfBeraCubs);
     });
@@ -283,7 +271,6 @@ describe("Bond and Buy", async function () {
         const event = beraFarm.interface.parseLog(log);
 
         if (event && event.name === "BeraCubsAwarded") {
-          console.log("Bera Cubs Compounded args", event.args);
           expect(event.args.sender).to.equal(fifthAccount.address);
           expect(event.args.amountOfCubs).to.equal(5);
         }

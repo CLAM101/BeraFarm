@@ -1,6 +1,7 @@
 import { Contracts } from "./Contracts";
 import { impersonateAccount } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { Addressable } from "ethers";
+import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 
 export class Helpers {
   contracts: Contracts;
@@ -34,6 +35,28 @@ export class Helpers {
     );
 
     return lpConduitAddress;
+  }
+
+  // TO DO: refactor this function to use the new contracts
+  async wrapTokens(
+    tokenAddress: string,
+    amountToWrap: string,
+    signer: HardhatEthersSigner,
+    abi: any
+  ) {
+    const wrapperContract = new this.ethers.Contract(
+      tokenAddress,
+      abi,
+      signer
+    ) as any;
+
+    const tx = await wrapperContract
+      .connect(signer)
+      .deposit({ value: this.ethers.parseEther(amountToWrap) });
+    await tx.wait();
+
+    const balance = await wrapperContract.balanceOf(signer.address);
+    console.log("WrappedToken Balance:", this.ethers.formatEther(balance));
   }
 
   determineBaseQuoteOrder(

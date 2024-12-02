@@ -519,15 +519,14 @@ contract BeraFarm is Ownable, ReentrancyGuard {
     ) internal pure returns (uint256) {
         // In Q64.64 format, the number is already a square root of the price
         // We need to square it and scale it down by the fixed-point scale factor (2^64)
-
-        // Convert sqrtPriceX64 to a uint256 so we can perform 128-bit multiplication safely
-        uint256 sqrtPriceX64_256 = uint256(sqrtPriceX64).div(2 ** 64);
+        uint256 priceConvertedForDecimals = uint256(sqrtPriceX64).mul(1e18).div(
+            2 ** 64
+        );
 
         // Square the value to get the base-to-quote price (but still in Q128.128 format)
-        uint256 priceX128 = sqrtPriceX64_256 * sqrtPriceX64_256;
-        console.log("PriceX128: ", priceX128);
-        // Convert from Q128.128 to a normal integer by shifting right 64 bits (2^64)
-        uint256 price = priceX128 >> 64;
+        uint256 price = priceConvertedForDecimals
+            .mul(priceConvertedForDecimals)
+            .div(1e18);
 
         return price; // This is the final base-to-quote price
     }
@@ -539,6 +538,8 @@ contract BeraFarm is Ownable, ReentrancyGuard {
             36000
         );
 
+        console.log("Fetched Price: ", fetchedPrice);
+
         uint256 price = calculatePrice(fetchedPrice);
 
         return price;
@@ -547,14 +548,10 @@ contract BeraFarm is Ownable, ReentrancyGuard {
     function getBondCost() public view returns (uint256) {
         uint256 tokenPrice = getFuzzPrice();
 
-        console.log("Token Price: ", tokenPrice);
-
-        uint256 convertedmaxCompoundCostSoFar = maxCompoundCostSoFar.div(1e18);
-
-        uint256 basePrice = convertedmaxCompoundCostSoFar.mul(tokenPrice);
+        uint256 basePrice = maxCompoundCostSoFar.mul(tokenPrice);
         uint256 discount = SafeMath.sub(100, bondDiscount);
 
-        uint256 bondPrice = basePrice.mul(discount).div(100);
+        uint256 bondPrice = basePrice.mul(discount).div(100).div(1e18);
 
         return bondPrice;
     }

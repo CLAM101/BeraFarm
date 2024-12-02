@@ -8,7 +8,7 @@ async function main() {
   try {
     const honeyAddress = "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03";
 
-    const { beraCub, beraFarm, fuzzToken, nftMarketplace, applySettingsLocal } =
+    const { beraCub, beraFarm, fuzzToken, nftMarketplace } =
       await hre.ignition.deploy(DeployLocal, {
         parameters: paramatersLocal,
       });
