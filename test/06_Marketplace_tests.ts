@@ -3,19 +3,16 @@ import "@nomicfoundation/hardhat-chai-matchers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
-import { BlockTag, Log } from "@ethersproject/abstract-provider";
-
-import { BeraCub, BeraFarm, FuzzToken, MockHoney } from "../typechain-types";
+import { Log } from "@ethersproject/abstract-provider";
 import { deployTokenTests } from "./testHelpers/deployContractsIgnition";
-import Marketplace from "../ignition/modules/Marketplace";
-
-const helpers = require("@nomicfoundation/hardhat-toolbox/network-helpers");
+import { Helpers } from "../helpers/Helpers";
+const networkHelpers = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 
 describe("Marketplace Tests", async function () {
   let beraCub: any,
     beraFarm: any,
     fuzzToken: any,
-    mockHoney: any,
+    honeyContract: any,
     nftMarketplace: any,
     owner: HardhatEthersSigner,
     otherAccount: HardhatEthersSigner,
@@ -27,8 +24,8 @@ describe("Marketplace Tests", async function () {
     eighthAccount: HardhatEthersSigner;
 
   before(async function () {
-    // await helpers.reset("https://rpc.ankr.com/berachain_testnet", 1886012);
-
+    await networkHelpers.reset("https://bartio.rpc.berachain.com/", 1886012);
+    const helpers = await Helpers.createAsync(ethers);
     [
       owner,
       otherAccount,
@@ -41,7 +38,7 @@ describe("Marketplace Tests", async function () {
     ] = await ethers.getSigners();
 
     const loadedFixture = await loadFixture(deployTokenTests);
-    mockHoney = loadedFixture.mockHoney;
+    honeyContract = helpers.contracts.getHoneyContract();
     beraCub = loadedFixture.beraCub;
     fuzzToken = loadedFixture.fuzzToken;
     beraFarm = loadedFixture.beraFarm;
@@ -208,7 +205,7 @@ describe("Marketplace Tests", async function () {
 
     it("Should allow listing of multiple items and fetching of all active listings", async function () {
       const price = ethers.parseEther("1");
-
+      this.timeout(100000);
       expect(
         await beraFarm.connect(owner).awardBeraCubs(otherAccount.address, 10)
       ).to.not.be.reverted;
@@ -229,8 +226,6 @@ describe("Marketplace Tests", async function () {
       }
 
       const activeListings = await nftMarketplace.getActiveListings();
-
-      console.log("active Listings", activeListings);
     });
 
     it("Should allow cancelation of a listing and reuse of an existing listing index", async function () {
@@ -259,8 +254,6 @@ describe("Marketplace Tests", async function () {
           expect(event.args.listingId).to.equal(0);
 
           canceledListingId = ethers.formatUnits(event.args.listingId, 0);
-
-          console.log("listingId in cancel", event.args.listingId);
         }
       });
 
@@ -281,7 +274,6 @@ describe("Marketplace Tests", async function () {
         const event = nftMarketplace.interface.parseLog(log);
 
         if (event && event.name === "ItemListed") {
-          console.log("listingId in relist", event.args.id);
           expect(event.args.seller).to.equal(otherAccount.address);
           expect(event.args.tokenId).to.equal(tokenId);
           expect(event.args.price).to.equal(ethers.parseEther("1"));

@@ -2,15 +2,15 @@ import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import "@nomicfoundation/hardhat-chai-matchers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
-import { deployContracts } from "./testHelpers/deploy-contracts";
 import { deployBlocker } from "./testHelpers/deployContractsIgnition";
+import { Helpers } from "../helpers/Helpers";
+import { waitForTransactionReceipt } from "viem/_types/actions/public/waitForTransactionReceipt";
 
 describe("Bera Farm Blocker Tests", async function () {
   let beraCub: any,
     beraFarm: any,
     fuzzToken: any,
-    mockHoney: any,
+    honeyContract: any,
     owner: any,
     otherAccount: any,
     thirdAccount: any,
@@ -33,7 +33,28 @@ describe("Bera Farm Blocker Tests", async function () {
       ] = await ethers.getSigners();
       const fixture = await loadFixture(deployBlocker);
 
-      mockHoney = fixture.mockHoney;
+      const helpers = await Helpers.createAsync(ethers);
+
+      honeyContract = await helpers.contracts.getHoneyContract();
+
+      const accountsForTransfer = [
+        owner,
+        otherAccount,
+        thirdAccount,
+        fourthAccount,
+        fifthAccount,
+        seventhAccount,
+      ];
+
+      const transferDetails = accountsForTransfer.map((signer) => {
+        return {
+          address: signer.address,
+          amount: ethers.parseEther("2000"),
+        };
+      });
+
+      await helpers.multiTransfer(honeyContract, transferDetails);
+
       beraCub = fixture.beraCub;
       fuzzToken = fixture.fuzzToken;
       beraFarm = fixture.beraFarm;
@@ -96,7 +117,7 @@ describe("Bera Farm Blocker Tests", async function () {
 
     it("Allows User to Buy Cubs for Honey after opening", async function () {
       await expect(
-        mockHoney
+        honeyContract
           .connect(owner)
           .approve(beraFarm.target, ethers.parseEther("55"))
       ).to.not.be.reverted;
@@ -105,8 +126,9 @@ describe("Bera Farm Blocker Tests", async function () {
     });
 
     it("Blocks the user from buying with $Honey if they have hit the max ownership allowance", async function () {
+      this.timeout(100000);
       await expect(
-        mockHoney
+        honeyContract
           .connect(seventhAccount)
           .approve(beraFarm.target, ethers.parseEther("200"))
       ).to.not.be.reverted;
@@ -122,7 +144,7 @@ describe("Bera Farm Blocker Tests", async function () {
 
     it("Blocks user from Buying Bera Cubs with Honey if they are sold out", async function () {
       await expect(
-        mockHoney
+        honeyContract
           .connect(owner)
           .approve(beraFarm.target, ethers.parseEther("400"))
       ).to.not.be.reverted;
@@ -137,7 +159,7 @@ describe("Bera Farm Blocker Tests", async function () {
 
     it("Blocks User from Bonding Cubs if they don't have enough $Honey", async function () {
       await expect(
-        mockHoney
+        honeyContract
           .connect(eighthAccount)
           .approve(beraFarm.target, ethers.parseEther("400"))
       ).to.not.be.reverted;
@@ -147,12 +169,14 @@ describe("Bera Farm Blocker Tests", async function () {
     });
 
     it("Blocks user from Bonding Bera Cubs if they have more than the required amount", async function () {
+      this.timeout(100000);
+
       await expect(
         beraFarm.connect(owner).awardBeraCubs(fourthAccount.address, 20)
       ).to.not.be.reverted;
 
       await expect(
-        mockHoney
+        honeyContract
           .connect(fourthAccount)
           .approve(beraFarm.target, ethers.parseEther("200"))
       ).to.not.be.reverted;
@@ -210,6 +234,7 @@ describe("Bera Farm Blocker Tests", async function () {
     });
 
     it("Blocks user from compounding if they have hit the limit per wallet", async function () {
+      this.timeout(100000);
       await expect(
         beraFarm.connect(owner).awardBeraCubs(eighthAccount.address, 20)
       ).to.not.be.reverted;

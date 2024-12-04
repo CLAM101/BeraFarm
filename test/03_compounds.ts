@@ -4,17 +4,15 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { BlockTag, Log } from "@ethersproject/abstract-provider";
-
-import { BeraCub, BeraFarm, FuzzToken, MockHoney } from "../typechain-types";
-
 import { deployCompounds } from "./testHelpers/deployContractsIgnition";
-const helpers = require("@nomicfoundation/hardhat-toolbox/network-helpers");
+import { Helpers } from "../helpers/Helpers";
+const networkHelpers = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 
 describe("Compounding Tests", async function () {
   let beraCub: any,
     beraFarm: any,
     fuzzToken: any,
-    mockHoney: any,
+    honeyContract: any,
     owner: HardhatEthersSigner,
     otherAccount: HardhatEthersSigner,
     thirdAccount: HardhatEthersSigner,
@@ -25,13 +23,14 @@ describe("Compounding Tests", async function () {
     eighthAccount: HardhatEthersSigner;
 
   before(async function () {
-    await helpers.reset("https://rpc.ankr.com/berachain_testnet", 1886012);
+    await networkHelpers.reset("https://bartio.rpc.berachain.com/", 1886012);
     const loadedFixture = await loadFixture(deployCompounds);
+
+    const helpers = await Helpers.createAsync(ethers);
 
     beraCub = loadedFixture.beraCub;
     fuzzToken = loadedFixture.fuzzToken;
     beraFarm = loadedFixture.beraFarm;
-    mockHoney = loadedFixture.mockHoney;
 
     [
       owner,
@@ -44,6 +43,10 @@ describe("Compounding Tests", async function () {
       eighthAccount,
     ] = await ethers.getSigners();
 
+    honeyContract = await helpers.contracts.getHoneyContract();
+
+    await honeyContract.transfer(owner.address, ethers.parseEther("2000"));
+
     await beraFarm.connect(owner).setPlatformState(true);
     await beraFarm.connect(owner).openBuyBeraCubsHoney();
     await fuzzToken.connect(owner).enableTrading();
@@ -53,7 +56,7 @@ describe("Compounding Tests", async function () {
     it("Effectively Compounds Cubs on a 5 fuzz interval", async function () {
       const expectedTransactionTotal = ethers.parseEther("15");
       await expect(
-        mockHoney
+        honeyContract
           .connect(owner)
           .approve(beraFarm.target, expectedTransactionTotal)
       ).to.not.be.reverted;
@@ -75,7 +78,6 @@ describe("Compounding Tests", async function () {
         const event = beraFarm.interface.parseLog(log);
 
         if (event && event.name === "BoughtBeraCubsHoney") {
-          console.log("Bought Bera Cub 5 $Honey", event.args);
           expect(event.args.sender).to.equal(owner.address);
           expect(event.args.amountOfCubs).to.equal(amountOfBeraCubs);
           expect(event.args.transactionTotal).to.equal(
@@ -85,11 +87,6 @@ describe("Compounding Tests", async function () {
       });
 
       const beraCubBalance = await beraCub.balanceOf(owner.address);
-
-      console.log(
-        "Bera Cub Balance at 5 $Honey per cub",
-        ethers.formatUnits(beraCubBalance, 0)
-      );
 
       expect(beraCubBalance).to.equal(amountOfBeraCubs);
 
@@ -102,21 +99,11 @@ describe("Compounding Tests", async function () {
 
       const totalClaimable = await beraFarm.getTotalClaimable(owner.address);
 
-      console.log(
-        "Total Claimable after 24 hours on 3 Cubs",
-        ethers.formatUnits(totalClaimable, 0)
-      );
-
       expect(totalClaimable).to.equal(expectedReward);
 
       const expectedCompoundCost1 = ethers.parseEther("5");
 
       let maxCompoundCostSoFar = await beraFarm.maxCompoundCostSoFar();
-
-      console.log(
-        "Max Bond Cost So Far",
-        ethers.formatEther(maxCompoundCostSoFar)
-      );
 
       expect(maxCompoundCostSoFar).to.equal(expectedCompoundCost1);
 
@@ -134,7 +121,6 @@ describe("Compounding Tests", async function () {
         const event = beraFarm.interface.parseLog(log);
 
         if (event && event.name === "BeraCubCompounded") {
-          console.log("Compounded Bera Cub", event.args);
           expect(event.args.sender).to.equal(owner.address);
 
           expect(event.args.compoundCost).to.equal(expectedCompoundCost1);
@@ -149,29 +135,17 @@ describe("Compounding Tests", async function () {
 
       maxCompoundCostSoFar = await beraFarm.maxCompoundCostSoFar();
 
-      console.log(
-        "Max Bond Cost So Far after 1 compound",
-        ethers.formatEther(maxCompoundCostSoFar)
-      );
-
       expect(maxCompoundCostSoFar).to.equal(ethers.parseEther("10"));
 
       const farmerAfterCompound = await beraFarm
         .connect(owner)
         .getFarmerByAddress(owner.address);
-
-      console.log("Farmer After Compound", farmerAfterCompound);
     });
 
     it("Effectively Compounds Cubs on a 10 fuzz interval", async function () {
       const expectedCompoundCost2 = ethers.parseEther("10");
 
       let maxCompoundCostSoFar = await beraFarm.maxCompoundCostSoFar();
-
-      console.log(
-        "Max Bond Cost So Far",
-        ethers.formatEther(maxCompoundCostSoFar)
-      );
 
       expect(maxCompoundCostSoFar).to.equal(expectedCompoundCost2);
 
@@ -189,7 +163,6 @@ describe("Compounding Tests", async function () {
         const event = beraFarm.interface.parseLog(log);
 
         if (event && event.name === "BeraCubCompounded") {
-          console.log("Compounded Bera Cub", event.args);
           expect(event.args.sender).to.equal(owner.address);
           expect(event.args.compoundCost).to.equal(expectedCompoundCost2);
         }
@@ -203,18 +176,11 @@ describe("Compounding Tests", async function () {
 
       maxCompoundCostSoFar = await beraFarm.maxCompoundCostSoFar();
 
-      console.log(
-        "Max Bond Cost So Far after 2 compounds",
-        ethers.formatEther(maxCompoundCostSoFar)
-      );
-
       expect(maxCompoundCostSoFar).to.equal(ethers.parseEther("15"));
 
       const farmerAfterCompound = await beraFarm
         .connect(owner)
         .getFarmerByAddress(owner.address);
-
-      console.log("Farmer After Compound 2", farmerAfterCompound);
     });
 
     it("Will not compound at a cost higher than the set limit of 25 $Fuzz", async function () {
@@ -222,26 +188,14 @@ describe("Compounding Tests", async function () {
 
       let maxCompoundCostSoFar = await beraFarm.maxCompoundCostSoFar();
 
-      console.log(
-        "Max Bond Cost So Far",
-        ethers.formatEther(maxCompoundCostSoFar)
-      );
-
       const farmerBeforeCompound = await beraFarm
         .connect(owner)
         .getFarmerByAddress(owner.address);
-
-      console.log("Farmer Before Compound to Max", farmerBeforeCompound);
 
       for (let index = 0; index < 3; index++) {
         await beraFarm.connect(owner).compoundBeraCubs();
 
         const costAfterCompound = await beraFarm.maxCompoundCostSoFar();
-
-        console.log(
-          "Cost After Compound",
-          ethers.formatEther(costAfterCompound)
-        );
       }
 
       const compoundTx = await beraFarm.connect(owner).compoundBeraCubs();
@@ -249,11 +203,6 @@ describe("Compounding Tests", async function () {
       await compoundTx.wait();
 
       maxCompoundCostSoFar = await beraFarm.maxCompoundCostSoFar();
-
-      console.log(
-        "Max Bond Cost So Far after 2 compounds",
-        ethers.formatEther(maxCompoundCostSoFar)
-      );
 
       expect(maxCompoundCostSoFar).to.equal(expectedCompoundCostMax);
     });

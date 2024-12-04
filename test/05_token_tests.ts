@@ -3,18 +3,16 @@ import "@nomicfoundation/hardhat-chai-matchers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
-import { BlockTag, Log } from "@ethersproject/abstract-provider";
-
-import { BeraCub, BeraFarm, FuzzToken, MockHoney } from "../typechain-types";
 import { deployTokenTests } from "./testHelpers/deployContractsIgnition";
+import { Helpers } from "../helpers/Helpers";
 
-const helpers = require("@nomicfoundation/hardhat-toolbox/network-helpers");
+const networkHelpers = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 
 describe("Emissions Tax, Rewards and controls Tests", async function () {
   let beraCub: any,
     beraFarm: any,
     fuzzToken: any,
-    mockHoney: any,
+    honeyContract: any,
     owner: HardhatEthersSigner,
     otherAccount: HardhatEthersSigner,
     thirdAccount: HardhatEthersSigner,
@@ -25,8 +23,8 @@ describe("Emissions Tax, Rewards and controls Tests", async function () {
     eighthAccount: HardhatEthersSigner;
 
   before(async function () {
-    await helpers.reset("https://rpc.ankr.com/berachain_testnet", 1886012);
-
+    await networkHelpers.reset("https://bartio.rpc.berachain.com/", 1886012);
+    const helpers = await Helpers.createAsync(ethers);
     [
       owner,
       otherAccount,
@@ -40,7 +38,9 @@ describe("Emissions Tax, Rewards and controls Tests", async function () {
 
     const loadedFixture = await loadFixture(deployTokenTests);
 
-    mockHoney = loadedFixture.mockHoney;
+    honeyContract = await helpers.contracts.getHoneyContract();
+
+    honeyContract.transfer(thirdAccount.address, ethers.parseEther("2000"));
 
     beraCub = loadedFixture.beraCub;
     fuzzToken = loadedFixture.fuzzToken;
@@ -88,7 +88,7 @@ describe("Emissions Tax, Rewards and controls Tests", async function () {
     });
     it("Should allow the Bera Farm contract to remove cubs only trading once the limit has been hit and allow a non cub owner to make a trade", async function () {
       await expect(
-        mockHoney
+        honeyContract
           .connect(thirdAccount)
           .approve(beraFarm.target, ethers.parseEther("100"))
       ).to.not.be.reverted;

@@ -2,6 +2,7 @@ import { Contracts } from "./Contracts";
 import { impersonateAccount } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { Addressable } from "ethers";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
+import { token } from "../typechain-types/@openzeppelin/contracts";
 
 export class Helpers {
   contracts: Contracts;
@@ -265,5 +266,18 @@ export class Helpers {
     const x = await queryContract.queryPrice(baseToken, quoteToken, 36000);
 
     return this.calculatePriceFromSqrt(x);
+  }
+
+  //Note: attache signer to contract before
+  async multiTransfer(
+    contract: any,
+    receiverAndAmounts: { address: string; amount: bigint }[]
+  ) {
+    for (const { address, amount } of receiverAndAmounts) {
+      const tx = await contract.transfer(address, amount);
+      await tx.wait();
+    }
+
+    return true;
   }
 }

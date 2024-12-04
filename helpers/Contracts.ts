@@ -24,8 +24,10 @@ export class Contracts {
   }
 
   async getHoneyContract(signer?: string, impersonate: boolean = false) {
-    if (impersonate && signer) {
-      await impersonateAccount(signer);
+    if (impersonate) {
+      await impersonateAccount(
+        signer || "0x1F5c5b2AA38E4469a6Eb09f8EcCa5D487E9d1431"
+      );
     }
     const fetchedSigner = signer
       ? await this.ethers.getSigner(signer)

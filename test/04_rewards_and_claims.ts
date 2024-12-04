@@ -3,17 +3,16 @@ import "@nomicfoundation/hardhat-chai-matchers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
-import { BlockTag, Log } from "@ethersproject/abstract-provider";
-
-import { BeraCub, BeraFarm, FuzzToken, MockHoney } from "../typechain-types";
+import { Log } from "@ethersproject/abstract-provider";
 import { deployRewardsAndClaims } from "./testHelpers/deployContractsIgnition";
-const helpers = require("@nomicfoundation/hardhat-toolbox/network-helpers");
+import { Helpers } from "../helpers/Helpers";
+const networkHelpers = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 
 describe("Emissions Tax, Rewards and controls Tests", async function () {
   let beraCub: any,
     beraFarm: any,
     fuzzToken: any,
-    mockHoney: any,
+    honeyContract: any,
     owner: HardhatEthersSigner,
     otherAccount: HardhatEthersSigner,
     thirdAccount: HardhatEthersSigner,
@@ -24,11 +23,12 @@ describe("Emissions Tax, Rewards and controls Tests", async function () {
     eighthAccount: HardhatEthersSigner;
 
   before(async function () {
-    await helpers.reset("https://rpc.ankr.com/berachain_testnet", 1886012);
+    await networkHelpers.reset("https://bartio.rpc.berachain.com/", 1886012);
 
     const loadedFixture = await loadFixture(deployRewardsAndClaims);
+    const helpers = await Helpers.createAsync(ethers);
 
-    mockHoney = loadedFixture.mockHoney;
+    honeyContract = await helpers.contracts.getHoneyContract();
     beraCub = loadedFixture.beraCub;
     fuzzToken = loadedFixture.fuzzToken;
     beraFarm = loadedFixture.beraFarm;
@@ -44,6 +44,17 @@ describe("Emissions Tax, Rewards and controls Tests", async function () {
       eighthAccount,
     ] = await ethers.getSigners();
 
+    const transferAddresses = [thirdAccount, otherAccount];
+
+    const transferDetails = transferAddresses.map((signer) => {
+      return {
+        address: signer.address,
+        amount: ethers.parseEther("2000"),
+      };
+    });
+
+    await helpers.multiTransfer(honeyContract, transferDetails);
+
     // open platform for testing
     await beraFarm.connect(owner).setPlatformState(true);
     await beraFarm.connect(owner).openBuyBeraCubsHoney();
@@ -54,15 +65,13 @@ describe("Emissions Tax, Rewards and controls Tests", async function () {
     it("Estimates daily rewards accurately based on the daily interest set", async function () {
       const dailyInterest = await beraFarm.currentDailyRewards();
 
-      console.log("Initial Daily Interest", ethers.formatEther(dailyInterest));
-
       expect(ethers.formatEther(dailyInterest)).to.equal("6.0");
     });
     it("Should pay out the correct amount of Fuzz Token for a 24 hour period when the user claims", async function () {
       const expectedTotalCost = ethers.parseEther("10");
 
       await expect(
-        mockHoney
+        honeyContract
           .connect(thirdAccount)
           .approve(beraFarm.target, expectedTotalCost)
       ).to.not.be.reverted;
@@ -96,7 +105,6 @@ describe("Emissions Tax, Rewards and controls Tests", async function () {
         const event = beraFarm.interface.parseLog(log);
 
         if (event && event.name === "RewardsClaimed") {
-          console.log("Rewards Claimed", event.args);
           expect(event.args.sender).to.equal(thirdAccount.address);
           expect(event.args.rewardAfterTax).to.be.closeTo(
             expectedAfterTax,
@@ -121,8 +129,6 @@ describe("Emissions Tax, Rewards and controls Tests", async function () {
     it("Should calculate rewards correctly based on the new daily interest set", async function () {
       const dailyInterest = await beraFarm.currentDailyRewards();
 
-      console.log("New Daily Interest", ethers.formatEther(dailyInterest));
-
       expect(dailyInterest).to.equal(ethers.parseEther("8.0"));
     });
 
@@ -136,7 +142,7 @@ describe("Emissions Tax, Rewards and controls Tests", async function () {
       const expectedTaxOnRewards = ethers.parseEther("1.6");
 
       await expect(
-        mockHoney
+        honeyContract
           .connect(otherAccount)
           .approve(beraFarm.target, expectedTotalCost)
       ).to.not.be.reverted;
@@ -155,11 +161,6 @@ describe("Emissions Tax, Rewards and controls Tests", async function () {
       const returnedTaxEstimate = await beraFarm
         .connect(otherAccount)
         .getTaxEstimate();
-
-      console.log(
-        "Returned Tax Estimate",
-        ethers.formatEther(returnedTaxEstimate)
-      );
 
       expect(returnedTaxEstimate).to.be.closeTo(
         expectedTaxOnRewards,
@@ -186,7 +187,6 @@ describe("Emissions Tax, Rewards and controls Tests", async function () {
         const event = beraFarm.interface.parseLog(log);
 
         if (event && event.name === "RewardsClaimed") {
-          console.log("Rewards Claimed After Rates adjust", event.args);
           expect(event.args.sender).to.equal(otherAccount.address);
           expect(event.args.rewardAfterTax).to.be.closeTo(
             expectedAfterTax,
@@ -226,11 +226,6 @@ describe("Emissions Tax, Rewards and controls Tests", async function () {
 
       const totalClaimable = await beraFarm.getTotalClaimable(
         fifthAccount.address
-      );
-
-      console.log(
-        "Total Claimable after 24 hours on 5 Cubs",
-        ethers.formatEther(totalClaimable)
       );
     });
   });
