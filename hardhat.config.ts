@@ -71,7 +71,7 @@ const config: HardhatUserConfig = {
         enabled: true,
       },
     },
-    artio_testnet: {
+    bartio_testnet: {
       chainId: parseInt(`${process.env.CHAIN_ID}`),
       url: `${process.env.RPC_URL || ""}`,
       accounts: [`${deployerPrivateKey}`, `${treasuryPrivateKey}`],

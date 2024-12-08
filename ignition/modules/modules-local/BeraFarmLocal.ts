@@ -1,6 +1,6 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
-import BeraCub from "./BeraCub";
-import FuzzToken from "./FuzzTokenV2";
+import BeraCub from "../modules-universal/BeraCub";
+import FuzzToken from "../modules-universal/FuzzTokenV2";
 
 export default buildModule("BeraFarm", (m): any => {
   const { beraCub } = m.useModule(BeraCub);
@@ -10,6 +10,7 @@ export default buildModule("BeraFarm", (m): any => {
   const owner = m.getAccount(0);
 
   const dailyInterest = m.getParameter("dailyInterest");
+  const honeyAddress = m.getParameter("honeyAddress");
   const claimTaxFuzz = m.getParameter("claimTaxFuzz");
   const bondDiscount = m.getParameter("bondDiscount");
   const maxSupplyForHoney = m.getParameter("maxSupplyForHoney");
@@ -33,6 +34,7 @@ export default buildModule("BeraFarm", (m): any => {
       limitBeforeEmissions,
       limitBeforeFullTokenTrading,
       maxCubsPerWallet,
+      honeyAddress,
     ],
     {
       id: "BeraFarm",

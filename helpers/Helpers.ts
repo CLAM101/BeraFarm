@@ -126,16 +126,21 @@ export class Helpers {
   async multiCallCreatePoolAddLiquid(
     fuzzTokenAddress: string | Addressable,
     fuzzAmount: bigint,
-    honeyAmount: bigint
+    honeyAmount: bigint,
+    customHoneyAddress?: string
   ) {
-    const honeyAddress = "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03";
+    const honeyAddress = customHoneyAddress
+      ? customHoneyAddress
+      : "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03";
     const bexAddress = "0xAB827b1Cc3535A9e549EE387A6E9C3F02F481B49";
 
     const [owner] = await this.ethers.getSigners();
 
     const dexContract = await this.contracts.getBexContract();
 
-    const honeyContract = await this.contracts.getHoneyContract();
+    const honeyContract = customHoneyAddress
+      ? await this.contracts.getContract(customHoneyAddress, "mockHoney", owner)
+      : await this.contracts.getHoneyContract();
 
     const fuzzTokenContract = await this.contracts.getContract(
       fuzzTokenAddress as string,

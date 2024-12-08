@@ -1,6 +1,6 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
-import BeraCub from "./BeraCub";
-import FuzzTokenV2 from "./FuzzTokenV2";
+import BeraCub from "../modules-universal/BeraCub";
+import FuzzTokenV2 from "../modules-universal/FuzzTokenV2";
 import BeraFarmLocal from "./BeraFarmLocal";
 
 export default buildModule("ApplySettingsLocal", (m): any => {

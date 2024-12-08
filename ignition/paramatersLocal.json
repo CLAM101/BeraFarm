@@ -24,6 +24,7 @@
     "maxSupplyFirstBatch": 3,
     "limitBeforeEmissions": 2,
     "limitBeforeFullTokenTrading": 5,
-    "maxCubsPerWallet": 20
+    "maxCubsPerWallet": 20,
+    "honeyAddress": "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03"
   }
 }

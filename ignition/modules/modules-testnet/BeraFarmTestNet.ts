@@ -1,8 +1,10 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
-import BeraCub from "./BeraCub";
+import BeraCub from "../modules-universal/BeraCub";
+import MockHoney from "./MockHoneyTestNet";
 
 export default buildModule("BeraFarmTestNet", (m): any => {
   const { beraCub } = m.useModule(BeraCub);
+  const { mockHoney } = m.useModule(MockHoney);
 
   // wallet addresses
   const treasury = m.getAccount(1);
@@ -19,11 +21,6 @@ export default buildModule("BeraFarmTestNet", (m): any => {
     "limitBeforeFullTokenTrading"
   );
   const maxCubsPerWallet = m.getParameter("maxCubsPerWallet");
-  const pool = m.getParameter("poolAddress");
-
-  // contract addresses
-  const honeyAddress = m.getParameter("honeyAddress");
-  const bexAddress = m.getParameter("bexAddress");
 
   const beraFarm = m.contract(
     "BeraFarm",
@@ -37,6 +34,7 @@ export default buildModule("BeraFarmTestNet", (m): any => {
       limitBeforeEmissions,
       limitBeforeFullTokenTrading,
       maxCubsPerWallet,
+      mockHoney,
     ],
     {
       id: "BeraFarmTestNet",

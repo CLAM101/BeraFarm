@@ -1,8 +1,10 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
-import BeraCub from "./BeraCub";
+import BeraCub from "../modules-universal/BeraCub";
 
 export default buildModule("FuzzTokenV2", (m): any => {
   const owner = m.getAccount(0);
+
+  const { beraCub } = m.useModule(BeraCub);
 
   let initialFuzzSupply = m.getParameter("initialFuzzSupply");
   let maxFuzzSupply = m.getParameter("maxFuzzSupply");
@@ -10,12 +12,7 @@ export default buildModule("FuzzTokenV2", (m): any => {
 
   const fuzzToken = m.contract(
     "FuzzTokenV2",
-    [
-      initialFuzzSupply,
-      maxFuzzSupply,
-      treasureAddress,
-      "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e",
-    ],
+    [initialFuzzSupply, maxFuzzSupply, treasureAddress, beraCub],
     {
       id: "FuzzTokenContract",
     }

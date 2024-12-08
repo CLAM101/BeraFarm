@@ -1,5 +1,5 @@
 import hre from "hardhat";
-import DeployLocal from "../ignition/modules/DeployLocal";
+import DeployLocal from "../ignition/modules/modules-local/DeployLocal";
 import paramatersLocal from "../ignition/paramatersLocal.json";
 import { ethers } from "hardhat";
 import { Helpers } from "../helpers/Helpers";

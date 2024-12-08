@@ -19,6 +19,7 @@ export class Contracts {
       beraFarm: await artifacts.readArtifact("BeraFarm"),
       fuzzToken: await artifacts.readArtifact("FuzzTokenV2"),
       nftMarketplace: await artifacts.readArtifact("NftMarketplace"),
+      mockHoney: await artifacts.readArtifact("MockHoney"),
     };
     return new Contracts({ ethers, abis });
   }

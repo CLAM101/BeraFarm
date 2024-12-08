@@ -82,7 +82,7 @@ describe("Compounding Tests", async function () {
           expect(event.args.amountOfCubs).to.equal(amountOfBeraCubs);
           expect(event.args.transactionTotal).to.be.closeTo(
             expectedTransactionTotal,
-            ethers.parseEther("0.01 ")
+            ethers.parseEther("0.01")
           );
         }
       });

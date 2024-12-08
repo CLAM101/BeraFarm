@@ -1,18 +1,12 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
-import BeraCub from "./BeraCub";
-import FuzzToken from "./FuzzTokenV2";
-import BeraFarmTestNet from "./BeraFarmTestNet";
-import FuzzArtifacts from "../../artifacts/contracts/FuzzTokenV2.sol/FuzzTokenV2.json";
+import BeraCub from "../modules-universal/BeraCub";
+import FuzzToken from "../modules-universal/FuzzTokenV2";
+import BeraFarmTestNet from "../modules-testnet/BeraFarmTestNet";
+
 export default buildModule("ApplySettingsTestNet", (m): any => {
   const { beraCub } = m.useModule(BeraCub);
-  const fuzzTokenAddress = m.getParameter("fuzzTokenAddress");
+  const { FuzzTokenV2 } = m.useModule(FuzzToken);
   const { beraFarm } = m.useModule(BeraFarmTestNet);
-
-  const fuzzTokenContract = m.contractAt(
-    "Honey",
-    FuzzArtifacts,
-    fuzzTokenAddress
-  );
 
   const owner = m.getAccount(0);
 
@@ -20,7 +14,7 @@ export default buildModule("ApplySettingsTestNet", (m): any => {
   m.call(beraFarm, "setCubNFTContract", [beraCub], {
     from: owner,
   });
-  m.call(beraFarm, "setFuzzAddr", [fuzzTokenAddress], { from: owner });
+  m.call(beraFarm, "setFuzzAddr", [FuzzTokenV2], { from: owner });
   m.call(beraFarm, "setPlatformState", [true], { from: owner });
   m.call(beraFarm, "openBuyBeraCubsHoney", [], { from: owner });
 
@@ -30,8 +24,8 @@ export default buildModule("ApplySettingsTestNet", (m): any => {
   m.call(beraCub, "addBeraFarmContract", [beraFarm], { from: owner });
 
   //Fuzz Token settings
-  m.call(fuzzTokenContract, "addController", [beraFarm], { from: owner });
-  m.call(fuzzTokenContract, "enableTrading", [], { from: owner });
+  m.call(FuzzTokenV2, "addController", [beraFarm], { from: owner });
+  m.call(FuzzTokenV2, "enableTrading", [], { from: owner });
 
   return { beraFarm };
 });

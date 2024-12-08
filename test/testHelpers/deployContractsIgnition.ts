@@ -1,5 +1,5 @@
 import { ignition } from "hardhat";
-import DeployLocal from "../../ignition/modules/DeployLocal";
+import DeployLocal from "../../ignition/modules/modules-local/DeployLocal";
 import paramsLocalBlocker from "../../ignition/paramsLocalBlockerTests.json";
 import paramsBondAndBuy from "../../ignition/paramsBondAndBuyTests.json";
 import paramsCompounds from "../../ignition/paramsCompoundTests.json";
