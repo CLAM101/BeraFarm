@@ -5,8 +5,8 @@ import BeraFarmTestNet from "../modules-testnet/BeraFarmTestNet";
 
 export default buildModule("ApplySettingsTestNet", (m): any => {
   const { beraCub } = m.useModule(BeraCub);
-  const { FuzzTokenV2 } = m.useModule(FuzzToken);
   const { beraFarm } = m.useModule(BeraFarmTestNet);
+  const { fuzzToken } = m.useModule(FuzzToken);
 
   const owner = m.getAccount(0);
 
@@ -14,7 +14,7 @@ export default buildModule("ApplySettingsTestNet", (m): any => {
   m.call(beraFarm, "setCubNFTContract", [beraCub], {
     from: owner,
   });
-  m.call(beraFarm, "setFuzzAddr", [FuzzTokenV2], { from: owner });
+  m.call(beraFarm, "setFuzzAddr", [fuzzToken], { from: owner });
   m.call(beraFarm, "setPlatformState", [true], { from: owner });
   m.call(beraFarm, "openBuyBeraCubsHoney", [], { from: owner });
 
@@ -24,8 +24,8 @@ export default buildModule("ApplySettingsTestNet", (m): any => {
   m.call(beraCub, "addBeraFarmContract", [beraFarm], { from: owner });
 
   //Fuzz Token settings
-  m.call(FuzzTokenV2, "addController", [beraFarm], { from: owner });
-  m.call(FuzzTokenV2, "enableTrading", [], { from: owner });
+  m.call(fuzzToken, "addController", [beraFarm], { from: owner });
+  m.call(fuzzToken, "enableTrading", [], { from: owner });
 
   return { beraFarm };
 });

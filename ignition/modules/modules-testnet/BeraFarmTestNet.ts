@@ -4,7 +4,7 @@ import MockHoney from "./MockHoneyTestNet";
 
 export default buildModule("BeraFarmTestNet", (m): any => {
   const { beraCub } = m.useModule(BeraCub);
-  const { mockHoney } = m.useModule(MockHoney);
+  const { mockHoneyTestNet } = m.useModule(MockHoney);
 
   // wallet addresses
   const treasury = m.getAccount(1);
@@ -34,7 +34,7 @@ export default buildModule("BeraFarmTestNet", (m): any => {
       limitBeforeEmissions,
       limitBeforeFullTokenTrading,
       maxCubsPerWallet,
-      mockHoney,
+      mockHoneyTestNet,
     ],
     {
       id: "BeraFarmTestNet",

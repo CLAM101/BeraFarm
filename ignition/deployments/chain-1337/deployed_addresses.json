@@ -1,6 +1,7 @@
 {
-  "BeraCub#BeraCubContract": "0xE61af6835cCb5176d2705ce7aB2979a3d4C3cd6C",
-  "BeraFarm#BeraFarm": "0x783e40fBae3E5C427102b496cf8621Fc5dD32F80",
-  "FuzzTokenV2#FuzzTokenV2Contract": "0xd8A9d057795fe2ef6171FCB05d2c96001555ff6d",
-  "NftMarketplace#NftMarketplace": "0xBE2879d8684FBDe08dc81ebDAF4E53c260E04B3f"
+  "BeraCub#BeraCubContract": "0x3b63985303D5636F6b60315B45531d176Af2c399",
+  "MockHoneyTestNet#MockHoneyTestNetContract": "0xd8A9d057795fe2ef6171FCB05d2c96001555ff6d",
+  "BeraFarmTestNet#BeraFarmTestNet": "0xa84E50408f9dC576309102da03Ed8D6A82b7869B",
+  "FuzzTokenV2#FuzzTokenV2Contract": "0x43B7856f14699bAdAeF9e484d4f911551ef9d739",
+  "NftMarketplace#NftMarketplace": "0x8dA4973175c2c700Cd91e9ac9A29b5431926D592"
 }

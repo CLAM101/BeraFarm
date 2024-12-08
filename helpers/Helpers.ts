@@ -139,7 +139,11 @@ export class Helpers {
     const dexContract = await this.contracts.getBexContract();
 
     const honeyContract = customHoneyAddress
-      ? await this.contracts.getContract(customHoneyAddress, "mockHoney", owner)
+      ? await this.contracts.getContract(
+          customHoneyAddress,
+          "mockHoney",
+          owner.address
+        )
       : await this.contracts.getHoneyContract();
 
     const fuzzTokenContract = await this.contracts.getContract(

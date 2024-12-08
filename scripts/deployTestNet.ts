@@ -1,18 +1,18 @@
 import hre from "hardhat";
 import DeployTestNet from "../ignition/modules/modules-testnet/DeployTestNet";
-import paramatersLocal from "../ignition/paramatersLocal.json";
+import paramsTestNet from "../ignition/paramsTestNet.json";
 import { ethers } from "hardhat";
 import { Helpers } from "../helpers/Helpers";
 
 async function main() {
   try {
-    const { beraCub, beraFarm, fuzzToken, nftMarketplace, mockHoney } =
+    const { beraCub, beraFarm, fuzzToken, mockHoneyTestNet, nftMarketplace } =
       await hre.ignition.deploy(DeployTestNet, {
-        parameters: paramatersLocal,
+        parameters: paramsTestNet,
       });
 
     const helpers = await Helpers.createAsync(ethers);
-    const honeyAddress = mockHoney.target as string;
+    const honeyAddress = mockHoneyTestNet.target as string;
 
     const fuzzAmount = ethers.parseEther("200000");
     const honeyAmount = ethers.parseEther("400000");
