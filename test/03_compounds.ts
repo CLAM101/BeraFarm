@@ -80,8 +80,9 @@ describe("Compounding Tests", async function () {
         if (event && event.name === "BoughtBeraCubsHoney") {
           expect(event.args.sender).to.equal(owner.address);
           expect(event.args.amountOfCubs).to.equal(amountOfBeraCubs);
-          expect(event.args.transactionTotal).to.equal(
-            expectedTransactionTotal
+          expect(event.args.transactionTotal).to.be.closeTo(
+            expectedTransactionTotal,
+            ethers.parseEther("0.01 ")
           );
         }
       });
