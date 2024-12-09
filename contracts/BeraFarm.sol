@@ -59,7 +59,7 @@ contract BeraFarm is Ownable, ReentrancyGuard {
     //Contracts
     IBERACUB public beraCubNftContract;
     IFUZZTOKEN public fuzz;
-    IERC20 private immutable honeyContract = IERC20(honeyAddress);
+    IERC20 private honeyContract;
     IQUERYCONTRACT private immutable queryContract =
         IQUERYCONTRACT(0x8685CE9Db06D40CBa73e3d09e6868FE476B5dC89);
 
@@ -137,6 +137,8 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         limitBeforeFullTokenTrading = _limitBeforeFullTokenTrading;
         maxCubsPerWallet = _maxCubsPerWallet;
         honeyAddress = _honeyAddress;
+
+        honeyContract = IERC20(honeyAddress);
     }
 
     /**
