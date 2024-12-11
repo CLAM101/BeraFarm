@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Interfaces/IBERAFARM.sol";
 import "base64-sol/base64.sol";
-import "hardhat/console.sol";
 
 contract BeraCub is Ownable, ERC721Enumerable, ERC721URIStorage {
     uint256 public tokenCounter;

@@ -10,7 +10,6 @@ import "./FuzzTokenV2.sol";
 import "./Interfaces/IFUZZTOKEN.sol";
 import "./Interfaces/IBERACUB.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "hardhat/console.sol";
 
 interface IQUERYCONTRACT {
     function queryPrice(
