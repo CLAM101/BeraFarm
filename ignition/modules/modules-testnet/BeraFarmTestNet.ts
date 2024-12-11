@@ -5,7 +5,7 @@ import FuzzTokenV2 from "../modules-universal/FuzzTokenV2";
 
 export default buildModule("BeraFarmTestNet", (m): any => {
   const { beraCub } = m.useModule(BeraCub);
-  const { mockHoneyTestNet } = m.useModule(MockHoney);
+  const { mockHoney } = m.useModule(MockHoney);
   const { fuzzToken } = m.useModule(FuzzTokenV2);
 
   // wallet addresses
@@ -36,11 +36,11 @@ export default buildModule("BeraFarmTestNet", (m): any => {
       limitBeforeEmissions,
       limitBeforeFullTokenTrading,
       maxCubsPerWallet,
-      mockHoneyTestNet,
+      mockHoney,
       fuzzToken,
     ],
     {
-      id: "BeraFarmTestNet",
+      id: "BeraFarmContract",
     }
   );
 

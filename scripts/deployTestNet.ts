@@ -6,13 +6,13 @@ import { Helpers } from "../helpers/Helpers";
 
 async function main() {
   try {
-    const { beraCub, beraFarm, fuzzToken, mockHoneyTestNet, nftMarketplace } =
+    const { beraCub, beraFarm, fuzzToken, mockHoney, nftMarketplace } =
       await hre.ignition.deploy(DeployTestNet, {
         parameters: paramsTestNet,
       });
 
     const helpers = await Helpers.createAsync(ethers);
-    const honeyAddress = mockHoneyTestNet.target as string;
+    const honeyAddress = mockHoney.target as string;
 
     const fuzzAmount = ethers.parseEther("200000");
     const honeyAmount = ethers.parseEther("400000");

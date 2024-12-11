@@ -31,6 +31,4 @@ export default buildModule("ApplySettingsTestNet", (m): any => {
   m.call(fuzzToken, "enableTrading", [], { from: owner });
   m.call(fuzzToken, "removeHibernation", [], { from: owner });
   m.call(fuzzToken, "openTradingToNonCubsOwner", [], { from: owner });
-
-  return { beraFarm };
 });

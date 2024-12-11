@@ -6,6 +6,7 @@ import paramsCompounds from "../../ignition/paramsCompoundTests.json";
 import paramsTokenTests from "../../ignition/paramsTokenTests.json";
 import { Helpers } from "../../helpers/Helpers";
 import { ethers } from "hardhat";
+import DeployTestNet from "../../ignition/modules/modules-testnet/DeployTestNet";
 
 export async function deployLiquid(
   fuzzToken: string

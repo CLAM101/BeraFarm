@@ -52,7 +52,7 @@ describe("Compounding Tests", async function () {
     await fuzzToken.connect(owner).enableTrading();
   });
 
-  describe("Bera Farm Tests", async function () {
+  describe("Compound Tests", async function () {
     it("Effectively Compounds Cubs on a 5 fuzz interval", async function () {
       const expectedTransactionTotal = ethers.parseEther("15");
       await expect(

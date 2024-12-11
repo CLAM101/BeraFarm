@@ -1,8 +1,6 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
-import Faucet from "./Faucet";
 
-const MockHoneyTestNet = buildModule("MockHoney", (m): any => {
-  const { faucet } = m.useModule(Faucet);
+const MockHoney = buildModule("MockHoney", (m): any => {
   const owner = m.getAccount(0);
 
   const mockHoney = m.contract(
@@ -10,20 +8,17 @@ const MockHoneyTestNet = buildModule("MockHoney", (m): any => {
     [
       [
         {
-          address: owner,
-          amount: "2000000000000000000000000",
-        },
-        {
-          address: faucet,
-          amount: "5000000000000000000000000",
+          recipient: owner,
+          amount: "3000000000000000000000000",
         },
       ],
+      "200000000000000000000",
     ],
     {
-      id: "MockHoneyTestNetContract",
+      id: "MockHoneyContract",
     }
   );
 
   return { mockHoney };
 });
-export default MockHoneyTestNet;
+export default MockHoney;
