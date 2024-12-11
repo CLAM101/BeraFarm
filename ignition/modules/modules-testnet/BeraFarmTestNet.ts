@@ -1,10 +1,12 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 import BeraCub from "../modules-universal/BeraCub";
-import MockHoney from "./MockHoneyTestNet";
+import MockHoney from "./MockHoney";
+import FuzzTokenV2 from "../modules-universal/FuzzTokenV2";
 
 export default buildModule("BeraFarmTestNet", (m): any => {
   const { beraCub } = m.useModule(BeraCub);
   const { mockHoneyTestNet } = m.useModule(MockHoney);
+  const { fuzzToken } = m.useModule(FuzzTokenV2);
 
   // wallet addresses
   const treasury = m.getAccount(1);
@@ -35,6 +37,7 @@ export default buildModule("BeraFarmTestNet", (m): any => {
       limitBeforeFullTokenTrading,
       maxCubsPerWallet,
       mockHoneyTestNet,
+      fuzzToken,
     ],
     {
       id: "BeraFarmTestNet",

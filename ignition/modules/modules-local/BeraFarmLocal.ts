@@ -35,6 +35,7 @@ export default buildModule("BeraFarm", (m): any => {
       limitBeforeFullTokenTrading,
       maxCubsPerWallet,
       honeyAddress,
+      fuzzToken,
     ],
     {
       id: "BeraFarm",

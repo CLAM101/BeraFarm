@@ -39,15 +39,16 @@ const config: HardhatUserConfig = {
 
   etherscan: {
     apiKey: {
-      artio_testnet: "artio_testnet",
+      bartio_testnet: "henlo",
       sepolia: etherScanApiKEY, // apiKey is not required, just set a placeholder
     },
     customChains: [
       {
-        network: "Berachain bArtio",
+        network: "bartio_testnet",
         chainId: 80084,
         urls: {
-          apiURL: "https://bartio.rpc.berachain.com/",
+          apiURL:
+            "https://api.routescan.io/v2/network/testnet/evm/80084/etherscan",
           browserURL: "https://bartio.beratrail.io/",
         },
       },
@@ -75,6 +76,9 @@ const config: HardhatUserConfig = {
       chainId: parseInt(`${process.env.CHAIN_ID}`),
       url: `${process.env.RPC_URL || ""}`,
       accounts: [`${deployerPrivateKey}`, `${treasuryPrivateKey}`],
+      gas: "auto", // Optional: use auto gas estimation
+      gasPrice: "auto", // Optional: set gas price to auto
+      blockGasLimit: 30000000, // Set the desired block gas limit
     },
 
     sepolia: {

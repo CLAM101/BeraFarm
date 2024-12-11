@@ -3,9 +3,6 @@
     "maxFuzzSupply": "30000000000000000000000000",
     "initialFuzzSupply": "3000000000000000000000000"
   },
-  "MockHoneyTestNet": {
-    "initialSupply": "10000000000000000000000000"
-  },
 
   "BeraCub": {
     "maxCubSupply": 200
@@ -19,6 +16,7 @@
     "maxSupplyFirstBatch": 50,
     "limitBeforeEmissions": 5,
     "limitBeforeFullTokenTrading": 5,
-    "maxCubsPerWallet": 50
+    "maxCubsPerWallet": 50,
+    "honeyAddress": "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03"
   }
 }

@@ -14,7 +14,10 @@ export default buildModule("ApplySettingsTestNet", (m): any => {
   m.call(beraFarm, "setCubNFTContract", [beraCub], {
     from: owner,
   });
-  m.call(beraFarm, "setFuzzAddr", [fuzzToken], { from: owner });
+  m.call(beraFarm, "setBaseAndQuoteTokens", [], {
+    from: owner,
+  });
+
   m.call(beraFarm, "setPlatformState", [true], { from: owner });
   m.call(beraFarm, "openBuyBeraCubsHoney", [], { from: owner });
 
@@ -26,6 +29,8 @@ export default buildModule("ApplySettingsTestNet", (m): any => {
   //Fuzz Token settings
   m.call(fuzzToken, "addController", [beraFarm], { from: owner });
   m.call(fuzzToken, "enableTrading", [], { from: owner });
+  m.call(fuzzToken, "removeHibernation", [], { from: owner });
+  m.call(fuzzToken, "openTradingToNonCubsOwner", [], { from: owner });
 
   return { beraFarm };
 });

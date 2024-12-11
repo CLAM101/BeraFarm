@@ -55,10 +55,12 @@ contract BeraFarm is Ownable, ReentrancyGuard {
     address public treasury;
     address public fuzzAddress;
     address public honeyAddress;
+    address public baseTokenAddress;
+    address public quoteTokenAddress;
 
     //Contracts
     IBERACUB public beraCubNftContract;
-    IFUZZTOKEN public fuzz;
+    IFUZZTOKEN public fuzzContract;
     IERC20 private honeyContract;
     IQUERYCONTRACT private immutable queryContract =
         IQUERYCONTRACT(0x8685CE9Db06D40CBa73e3d09e6868FE476B5dC89);
@@ -125,7 +127,8 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         uint256 _limitBeforeEmissions, //Limit of Cubs to be sold befor emissions are turned on
         uint256 _limitBeforeFullTokenTrading,
         uint256 _maxCubsPerWallet,
-        address _honeyAddress
+        address _honeyAddress,
+        address _fuzzAddress
     ) {
         treasury = _treasury;
         dailyInterest = _dailyInterest;
@@ -137,8 +140,9 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         limitBeforeFullTokenTrading = _limitBeforeFullTokenTrading;
         maxCubsPerWallet = _maxCubsPerWallet;
         honeyAddress = _honeyAddress;
-
+        fuzzAddress = _fuzzAddress;
         honeyContract = IERC20(honeyAddress);
+        fuzzContract = IFUZZTOKEN(fuzzAddress);
     }
 
     /**
@@ -157,7 +161,7 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         );
 
         uint256 beraCubBalance = beraCubNftContract.balanceOf(msg.sender);
-        uint256 fuzzOwned = fuzz.balanceOf(msg.sender);
+        uint256 fuzzOwned = fuzzContract.balanceOf(msg.sender);
 
         uint256 beraCubsOwned = beraCubBalance + _amount;
         require(beraCubsOwned <= maxCubsPerWallet, "Max Bera Cubs Owned");
@@ -167,8 +171,8 @@ contract BeraFarm is Ownable, ReentrancyGuard {
 
         beraCubNftContract.buyBeraCubs(msg.sender, _amount);
 
-        fuzz.transferFrom(msg.sender, address(this), transactionTotal);
-        fuzz.burn(address(this), transactionTotal);
+        fuzzContract.transferFrom(msg.sender, address(this), transactionTotal);
+        fuzzContract.burn(address(this), transactionTotal);
 
         _setOrUpdateFarmer(msg.sender);
         _updateClaims(msg.sender);
@@ -237,7 +241,7 @@ contract BeraFarm is Ownable, ReentrancyGuard {
         }
 
         if (totalSupplyPlusAmount >= limitBeforeFullTokenTrading) {
-            fuzz.openTradingToEveryone();
+            fuzzContract.openTradingToEveryone();
         }
 
         emit BoughtBeraCubsHoney(msg.sender, _amount, transactionTotal);
@@ -400,8 +404,8 @@ contract BeraFarm is Ownable, ReentrancyGuard {
 
         if (reward > 0) {
             farmers[msg.sender].claimsFuzz = 0;
-            fuzz.mint(msg.sender, toFarmer);
-            fuzz.burn(msg.sender, toBurn);
+            fuzzContract.mint(msg.sender, toFarmer);
+            fuzzContract.burn(msg.sender, toBurn);
         }
 
         emit RewardsClaimed(msg.sender, toFarmer, tax);
@@ -533,14 +537,17 @@ contract BeraFarm is Ownable, ReentrancyGuard {
 
     function getFuzzPrice() public view returns (uint256) {
         uint128 fetchedPrice = queryContract.queryPrice(
-            honeyAddress,
-            fuzzAddress,
+            baseTokenAddress,
+            quoteTokenAddress,
             36000
         );
 
         uint256 price = calculatePrice(fetchedPrice);
 
-        return price;
+        return
+            (baseTokenAddress == honeyAddress)
+                ? price
+                : uint256(1e36).div(price);
     }
 
     function getBondCost() public view returns (uint256) {
@@ -613,12 +620,23 @@ contract BeraFarm is Ownable, ReentrancyGuard {
     }
 
     //Only owner platform settings
+
+    function setBaseAndQuoteTokens() public onlyOwner {
+        if (honeyAddress < fuzzAddress) {
+            baseTokenAddress = honeyAddress;
+            quoteTokenAddress = fuzzAddress;
+        } else {
+            baseTokenAddress = fuzzAddress;
+            quoteTokenAddress = honeyAddress;
+        }
+    }
+
     function setTreasuryAddr(address treasuryAddress) public onlyOwner {
         treasury = treasuryAddress;
     }
 
     function setFuzzAddr(address _fuzzAddress) public onlyOwner {
-        fuzz = IFUZZTOKEN(_fuzzAddress);
+        fuzzContract = IFUZZTOKEN(_fuzzAddress);
         fuzzAddress = _fuzzAddress;
     }
 
@@ -644,7 +662,7 @@ contract BeraFarm is Ownable, ReentrancyGuard {
     }
 
     function setFuzzTokenAddress(address _fuzz) public onlyOwner {
-        fuzz = IFUZZTOKEN(_fuzz);
+        fuzzContract = IFUZZTOKEN(_fuzz);
     }
 
     function openBonding() external onlyOwner {

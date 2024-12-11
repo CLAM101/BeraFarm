@@ -14,7 +14,9 @@ export default buildModule("ApplySettingsLocal", (m): any => {
   m.call(beraFarm, "setCubNFTContract", [beraCub], {
     from: owner,
   });
-  m.call(beraFarm, "setFuzzAddr", [fuzzToken], { from: owner });
+  m.call(beraFarm, "setBaseAndQuoteTokens", [], {
+    from: owner,
+  });
 
   //Bera Cub settings
   m.call(beraCub, "openMinting", [], { from: owner });

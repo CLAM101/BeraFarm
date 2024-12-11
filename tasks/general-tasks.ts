@@ -156,7 +156,7 @@ task(
   "Approves spend with the Honey contract on testnet"
 ).setAction(async (taskArgs, hre) => {
   try {
-    const farmAddress = "0xd8A9d057795fe2ef6171FCB05d2c96001555ff6d";
+    const farmAddress = "0x6afAfEd29a3cd77682c47B23Eb7E07781818F715";
 
     const [owner] = await hre.ethers.getSigners();
 
@@ -169,7 +169,7 @@ task(
       signer
     );
 
-    const tokenAddress = "0x8dA4973175c2c700Cd91e9ac9A29b5431926D592";
+    const tokenAddress = "0x73A1546430678c23654D164A1d6C43cE31F8C4d4";
 
     const tokenArtifacts = await hre.artifacts.readArtifact("FuzzTokenV2");
 
@@ -187,6 +187,13 @@ task(
 
     const enableTrading = await tokenContract.enableTrading();
     await enableTrading.wait();
+
+    const removeHibernation = await tokenContract.removeHibernation();
+    await removeHibernation.wait();
+
+    const removeCubsOnlyTx = await tokenContract.openTradingToNonCubsOwner();
+
+    await removeCubsOnlyTx.wait();
 
     console.log("platfrom is live");
   } catch (e) {

@@ -134,9 +134,9 @@ contract BeraCub is Ownable, ERC721Enumerable, ERC721URIStorage {
                         bytes(
                             abi.encodePacked(
                                 '{"name":"',
-                                "Bera Cub",
-                                '", "description":"A Wild Bera Cub Shedding its $FUZZ", "attributes":"", "image":"',
-                                "https://ivory-fierce-cat-639.mypinata.cloud/ipfs/Qmek4YeBuANk8ynpfX1Vb8xwnwRtSYfdGc2EFfKZSaT7V5?_gl=1*1ipzxby*_ga*NjMwOTM0NDU1LjE3MDE5NzI1NjU.*_ga_5RMPXG14TE*MTcwMjQwMjc5Mi41LjEuMTcwMjQwMzI0NS4zNi4wLjA.",
+                                "Bear Cub",
+                                '", "description":"A Wild Bear Cub Shedding its $FUZZ", "attributes":"", "image":"',
+                                "https://ivory-fierce-cat-639.mypinata.cloud/files/bafybeiahpvhbidw6fty56rxgvbxhfwkmyqj4yi62ydgqk6ilh26d5g4xfe?X-Algorithm=PINATA1&X-Date=1733945093&X-Expires=30&X-Method=GET&X-Signature=b1600ab540f331d5804d04eaab99c315f0f5144ecb8b474648d0a1a85b5a7b87",
                                 '"}'
                             )
                         )
