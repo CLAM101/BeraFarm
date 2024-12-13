@@ -8,6 +8,8 @@ contract MockHoney is ERC20 {
         uint256 amount;
     }
 
+    event DripReleased(address receiver, uint256 dripAmount);
+
     uint256 public dripAmount;
 
     mapping(address => uint256) public lastDrip;
@@ -34,6 +36,8 @@ contract MockHoney is ERC20 {
         _mint(msg.sender, dripAmount);
 
         lastDrip[msg.sender] = block.timestamp;
+
+        emit DripReleased(msg.sender, dripAmount);
     }
 
     function setCooldown(uint256 _cooldown) external {
